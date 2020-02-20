@@ -65,6 +65,16 @@ function moreInfo(entity, large=false) {
 
 const CUSTOM_TYPE_PREFIX = "custom:";
 
+let helpers = window.cardHelpers;
+const helperPromise = new Promise(async (resolve, reject) => {
+  if(helpers) resolve();
+  if(window.loadCardHelpers) {
+    helpers = await window.loadCardHelpers();
+    window.cardHelpers = helpers;
+    resolve();
+  }
+});
+
 function errorElement(error, origConfig) {
   const el = document.createElement("hui-error-card");
   el.setConfig({
@@ -76,12 +86,15 @@ function errorElement(error, origConfig) {
 }
 
 function _createElement(tag, config) {
-  const el = document.createElement(tag);
+  let el = document.createElement(tag);
   try {
-    el.setConfig({...config});
+    el.setConfig(JSON.parse(JSON.stringify(config)));
   } catch (err) {
-    return errorElement(err, config);
+    el = errorElement(err, config);
   }
+  helperPromise.then(() => {
+    fireEvent("ll-rebuild", {}, el);
+  });
   return el;
 }
 
@@ -114,7 +127,52 @@ function createLovelaceElement(thing, config) {
 }
 
 function createCard(config) {
+  if(helpers) return helpers.createCardElement(config);
   return createLovelaceElement('card', config);
+}
+
+function _deviceID() {
+  const ID_STORAGE_KEY = 'lovelace-player-device-id';
+  if(window['fully'] && typeof fully.getDeviceId === "function")
+    return fully.getDeviceId();
+  if(!localStorage[ID_STORAGE_KEY])
+  {
+    const s4 = () => {
+      return Math.floor((1+Math.random())*100000).toString(16).substring(1);
+    };
+    localStorage[ID_STORAGE_KEY] = `${s4()}${s4()}-${s4()}${s4()}`;
+  }
+  return localStorage[ID_STORAGE_KEY];
+}
+let deviceID = _deviceID();
+
+function subscribeRenderTemplate(conn, onChange, params) {
+  // params = {template, entity_ids, variables}
+  if(!conn)
+    conn = hass().connection;
+  let variables = {
+    user: hass().user.name,
+    browser: deviceID,
+    hash: location.hash.substr(1) || ' ',
+    ...params.variables,
+  };
+  let template = params.template;
+  let entity_ids = params.entity_ids;
+
+  return conn.subscribeMessage(
+    (msg) => {
+      let res = msg.result;
+      // Localize "_(key)" if found in template results
+      const localize_function = /_\([^)]*\)/g;
+      res = res.replace(localize_function, (key) => hass().localize(key.substring(2, key.length-1)) || key);
+      onChange(res);
+    },
+    { type: "render_template",
+      template,
+      variables,
+      entity_ids,
+    }
+  );
 }
 
 /**
@@ -444,11 +502,12 @@ fecha.parse = function (dateStr, format, i18nSettings) {
   return date;
 };
 
-var a=function(){try{(new Date).toLocaleDateString("i");}catch(e){return "RangeError"===e.name}return !1}()?function(e,t){return e.toLocaleDateString(t,{year:"numeric",month:"long",day:"numeric"})}:function(t){return fecha.format(t,"mediumDate")},n=function(){try{(new Date).toLocaleString("i");}catch(e){return "RangeError"===e.name}return !1}()?function(e,t){return e.toLocaleString(t,{year:"numeric",month:"long",day:"numeric",hour:"numeric",minute:"2-digit"})}:function(t){return fecha.format(t,"haDateTime")},r=function(){try{(new Date).toLocaleTimeString("i");}catch(e){return "RangeError"===e.name}return !1}()?function(e,t){return e.toLocaleTimeString(t,{hour:"numeric",minute:"2-digit"})}:function(t){return fecha.format(t,"shortTime")};function d(e){return e.substr(0,e.indexOf("."))}var R=["closed","locked","off"],A=function(e,t,a,n){n=n||{},a=null==a?{}:a;var r=new Event(t,{bubbles:void 0===n.bubbles||n.bubbles,cancelable:Boolean(n.cancelable),composed:void 0===n.composed||n.composed});return r.detail=a,e.dispatchEvent(r),r};var U=function(e){A(window,"haptic",e);},V=function(e,t,a){void 0===a&&(a=!1),a?history.replaceState(null,"",t):history.pushState(null,"",t),A(window,"location-changed",{replace:a});},W=function(e,t,a){void 0===a&&(a=!0);var n,r=d(t),i="group"===r?"homeassistant":r;switch(r){case"lock":n=a?"unlock":"lock";break;case"cover":n=a?"open_cover":"close_cover";break;default:n=a?"turn_on":"turn_off";}return e.callService(i,n,{entity_id:t})},Y=function(e,t){var a=R.includes(e.states[t].state);return W(e,t,a)};//# sourceMappingURL=index.m.js.map
+var a=function(){try{(new Date).toLocaleDateString("i");}catch(e){return "RangeError"===e.name}return !1}()?function(e,t){return e.toLocaleDateString(t,{year:"numeric",month:"long",day:"numeric"})}:function(t){return fecha.format(t,"mediumDate")},n=function(){try{(new Date).toLocaleString("i");}catch(e){return "RangeError"===e.name}return !1}()?function(e,t){return e.toLocaleString(t,{year:"numeric",month:"long",day:"numeric",hour:"numeric",minute:"2-digit"})}:function(t){return fecha.format(t,"haDateTime")},r=function(){try{(new Date).toLocaleTimeString("i");}catch(e){return "RangeError"===e.name}return !1}()?function(e,t){return e.toLocaleTimeString(t,{hour:"numeric",minute:"2-digit"})}:function(t){return fecha.format(t,"shortTime")};function d(e){return e.substr(0,e.indexOf("."))}var R=["closed","locked","off"],A=function(e,t,a,n){n=n||{},a=null==a?{}:a;var r=new Event(t,{bubbles:void 0===n.bubbles||n.bubbles,cancelable:Boolean(n.cancelable),composed:void 0===n.composed||n.composed});return r.detail=a,e.dispatchEvent(r),r};var F=function(){var e=document.querySelector("home-assistant");if(e=(e=(e=(e=(e=(e=(e=(e=e&&e.shadowRoot)&&e.querySelector("home-assistant-main"))&&e.shadowRoot)&&e.querySelector("app-drawer-layout partial-panel-resolver"))&&e.shadowRoot||e)&&e.querySelector("ha-panel-lovelace"))&&e.shadowRoot)&&e.querySelector("hui-root")){var t=e.lovelace;return t.current_view=e.___curView,t}return null},B=function(){var e=document.querySelector("home-assistant");if(e=(e=(e=(e=(e=(e=(e=(e=e&&e.shadowRoot)&&e.querySelector("home-assistant-main"))&&e.shadowRoot)&&e.querySelector("app-drawer-layout partial-panel-resolver"))&&e.shadowRoot||e)&&e.querySelector("ha-panel-lovelace"))&&e.shadowRoot)&&e.querySelector("hui-root"))return e.shadowRoot},U=function(e){A(window,"haptic",e);},V=function(e,t,a){void 0===a&&(a=!1),a?history.replaceState(null,"",t):history.pushState(null,"",t),A(window,"location-changed",{replace:a});},W=function(e,t,a){void 0===a&&(a=!0);var n,r=d(t),i="group"===r?"homeassistant":r;switch(r){case"lock":n=a?"unlock":"lock";break;case"cover":n=a?"open_cover":"close_cover";break;default:n=a?"turn_on":"turn_off";}return e.callService(i,n,{entity_id:t})},Y=function(e,t){var a=R.includes(e.states[t].state);return W(e,t,a)};//# sourceMappingURL=index.m.js.map
 
 class SidebarCard extends LitElement {
     constructor() {
         super();
+        this.templateLines = [];
     }
     static get properties() {
         return {
@@ -460,43 +519,43 @@ class SidebarCard extends LitElement {
     render() {
         const sidebarMenu = this.config.sidebarMenu;
         const sidebarMenuColor = this.config.sidebarMenuColor;
+        const title = "title" in this.config ? this.config.title : false;
+        const clock = this.config.clock && this.hass.states['sensor.time'] ? this.config.clock : false;
+        const textColor = "textColor" in this.config ? this.config.textColor : false;
         return html `
-      <div id="wrapper">
-
-        <div id="sidebar">
-          ${sidebarMenu.length > 0 ? html `
-          <ul class="sidebarMenu" style="${sidebarMenuColor ? 'color:' + sidebarMenuColor : ''}">
-            ${sidebarMenu.map(sidebarMenuItem => {
-            return html `<li @click="${e => this._menuAction(e)}" class="${sidebarMenuItem.active ? 'active' : ''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}" data->${sidebarMenuItem.name}</li>`;
+      ${clock ? html `<h1 style="${textColor ? 'color:' + textColor : ''}">${this.hass.states['sensor.time'].state}</h1>` : html ``}
+      ${title ? html `<h1 style="${textColor ? 'color:' + textColor : ''}">${title}</h1>` : html ``}
+      
+      ${this.config.template ? html `
+        <ul class="template" style="${textColor ? 'color:' + textColor : ''}">
+          ${this.templateLines.map(line => {
+            return html `<li>${line}</li>`;
         })}
-          </ul>
-        ` : html ``}
-        </div>
-        <div id="cards">
-        </div>
-
-      </div>
+        </ul>
+      ` : html ``}
+      ${sidebarMenu.length > 0 ? html `
+      <ul class="sidebarMenu" style="${sidebarMenuColor ? 'color:' + sidebarMenuColor : ''}">
+        ${sidebarMenu.map(sidebarMenuItem => {
+            return html `<li @click="${e => this._menuAction(e)}" data-path="${sidebarMenuItem.navigation_path ? sidebarMenuItem.navigation_path : ''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}" data->${sidebarMenuItem.name}</li>`;
+        })}
+      </ul>
+      ` : html ``}
     `;
     }
-    async build_card(card) {
-        const el = createCard(card);
-        el.hass = hass();
-        this.shadowRoot.querySelector("#cards").appendChild(el);
-        return new Promise((resolve) => el.updateComplete
-            ? el.updateComplete.then(() => resolve(el))
-            : resolve(el));
-    }
-    async build_cards() {
-        // Clear out any cards in the staging area which might have been built but not placed
-        const cards = this.shadowRoot.querySelector("#cards");
-        while (cards.lastChild)
-            cards.removeChild(cards.lastChild);
-        return Promise.all(this.config.cards.map((c) => this.build_card(c)));
-    }
     firstUpdated() {
+        document.querySelectorAll("paper-tab").forEach(paperTab => {
+            paperTab.addEventListener('click', () => {
+                this._updateActiveMenu();
+            });
+        });
     }
-    async updated() {
-        await this.build_cards();
+    updated() { }
+    _updateActiveMenu() {
+        console.log(document.location.pathname);
+        this.shadowRoot.querySelectorAll.forEach(menuItem => {
+            menuItem.classList.remove("active");
+        });
+        this.shadowRoot.querySelector('li[data-path="' + document.location.pathname + '"]').classList.add('active');
     }
     _menuAction(e) {
         if (e.target.dataset && e.target.dataset.menuitem) {
@@ -542,43 +601,286 @@ class SidebarCard extends LitElement {
         if (!config.sidebarMenu) {
             throw new Error("You need to define sidebarMenu");
         }
-        if (!config.cards) {
-            throw new Error("You need to define cards");
-        }
         this.config = config;
+        if (this.config.template) {
+            subscribeRenderTemplate(null, (res) => {
+                var result = res.match(/<li>(.*?)<\/li>/gs).map(function (val) {
+                    return val.replace(/<\/?li>/g, '');
+                });
+                this.templateLines = result;
+            }, {
+                template: this.config.template,
+                variables: { config: this.config },
+                entity_ids: this.config.entity_ids,
+            });
+        }
     }
     getCardSize() {
         return 1;
     }
     static get styles() {
         return css `
-        :host {}
-        #wrapper {
-          display:flex;
-          flex-direction:row;
+        :host {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
         }
-
-        #wrapper #sidebar {
-          width:25%;
-        }
-
-        #wrapper #cards {
-          width:75%;
-        }
-
-        #sidebar  .sidebarMenu {
+        .sidebarMenu {
           list-style:none;
           margin:0 0 30px 4px;
           padding: 0 16px 0 0;
         }
-        #sidebar  .sidebarMenu li {
+        .sidebarMenu li {
           padding: 10px 20px;
           border-radius: 12px;
+          color:inherit;
+          font-size:20px;
+          font-weight:300;
+          white-space: normal;
+          display:block;
         }
-        #sidebar .sidebarMenu li.active {
+        .sidebarMenu li.active {
           background-color: rgba(0,0,0,0.2);
+        }
+
+        h1 {
+          margin-bottom: 30px;
+          margin-left: 4px;
+          font-size: 32px;
+          font-weight: 300;
+        }
+        .template {
+          margin:0 0 30px 4px;
+          padding: 0 16px 0 0;
+          list-style:none;
+        }
+        
+        .template li {
+          display:block;
+          color:inherit;
+          font-size:20px;
+          font-weight:300;
+          white-space: normal;
         }
     `;
     }
 }
 customElements.define('sidebar-card', SidebarCard);
+async function buildCard(sidebar, config) {
+    config.type = 'custom:sidebar-card';
+    const sidebarCard = createCard(config);
+    sidebarCard.hass = hass();
+    sidebar.appendChild(sidebarCard);
+    return new Promise((resolve) => sidebarCard.updateComplete ? sidebarCard.updateComplete.then(() => resolve(sidebarCard)) : resolve(sidebarCard));
+}
+async function buildSidebar() {
+    let lovelace = F();
+    if (lovelace.config.sidebar) {
+        let root = B();
+        let appLayout = root.querySelector('ha-app-layout');
+        // get element to wrap
+        let contentContainer = appLayout.shadowRoot.querySelector('#contentContainer');
+        // create wrapper container
+        var wrapper = document.createElement('div');
+        wrapper.setAttribute('id', 'customSidebarWrapper');
+        wrapper.setAttribute('style', 'display:flex;flex-direction:row');
+        // insert wrapper before el in the DOM tree
+        contentContainer.parentNode.insertBefore(wrapper, contentContainer);
+        // move el into wrapper
+        let sidebar = document.createElement('div');
+        sidebar.setAttribute('id', 'customSidebar');
+        sidebar.setAttribute('style', 'width:25%;');
+        wrapper.appendChild(sidebar);
+        wrapper.appendChild(contentContainer);
+        contentContainer.setAttribute('style', 'width:75%;');
+        await buildCard(sidebar, lovelace.config.sidebar);
+    }
+}
+buildSidebar();
+// class SidebarCard extends LitElement {
+//   config: any;
+//   hass: any;
+//   shadowRoot: any;
+//   renderCard: any;
+//   templateLines: any = [];
+//   static get properties() {
+//     return {
+//       hass: {},
+//       config: {},
+//       active: {}
+//     };
+//   }
+//   constructor() {
+//     super();
+//   }
+//   render() {
+//     const sidebarMenu = this.config.sidebarMenu;
+//     const sidebarMenuColor = this.config.sidebarMenuColor;
+//     const title = "title" in this.config ? this.config.title : false;
+//     const clock = this.config.clock && this.hass.states['sensor.time'] ? this.config.clock : false;
+//     const textColor = "textColor" in this.config ? this.config.textColor : false
+//     return html`
+//       <div id="wrapper">
+//         <div id="sidebar">
+//           ${clock ? html `<h1 style="${textColor ? 'color:'+textColor : ''}">${this.hass.states['sensor.time'].state}</h1>`: html ``}
+//           ${title ? html `<h1 style="${textColor ? 'color:'+textColor : ''}">${title}</h1>`: html ``}
+//           <ul class="template" style="${textColor ? 'color:'+textColor : ''}">
+//             ${this.templateLines.map(line => {
+//               return html`<li>${line}</li>`;
+//             })}
+//           </ul>
+//           ${sidebarMenu.length > 0 ? html`
+//           <ul class="sidebarMenu" style="${sidebarMenuColor ? 'color:'+sidebarMenuColor : ''}">
+//             ${sidebarMenu.map(sidebarMenuItem => {
+//               return html`<li @click="${e => this._menuAction(e)}" class="${sidebarMenuItem.active ? 'active':''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}" data->${sidebarMenuItem.name}</li>`;
+//             })}
+//           </ul>
+//         ` : html ``}
+//         </div>
+//         <div id="cards">
+//         </div>
+//       </div>
+//     `;
+//   }
+//   async build_card(card) {
+//     const el = createCard(card);
+//     el.hass = hass();
+//     this.shadowRoot.querySelector("#cards").appendChild(el);
+//     return new Promise((resolve) =>
+//       el.updateComplete
+//         ? el.updateComplete.then(() => resolve(el))
+//         : resolve(el)
+//       );
+//   }
+//   async build_cards() {
+//     // Clear out any cards in the staging area which might have been built but not placed
+//     const cards = this.shadowRoot.querySelector("#cards");
+//     while(cards.lastChild)
+//     cards.removeChild(cards.lastChild);
+//     return Promise.all(this.config.cards.map((c) => this.build_card(c)));
+//   }
+//   firstUpdated() {
+//   }
+//   async updated() {
+//     await this.build_cards();
+//   }
+//   _menuAction(e) {
+//     if(e.target.dataset && e.target.dataset.menuitem) {
+//       const menuItem = JSON.parse(e.target.dataset.menuitem);
+//       this._customAction(menuItem);
+//     }
+//   }
+//   _customAction(tapAction) {
+//     switch (tapAction.action) {
+//       case "more-info":
+//         if (tapAction.entity || tapAction.camera_image) {
+//           moreInfo(tapAction.entity ? tapAction.entity : tapAction.camera_image!);
+//         }
+//         break;
+//       case "navigate":
+//         if (tapAction.navigation_path) {
+//           navigate(window, tapAction.navigation_path);
+//         }
+//         break;
+//       case "url":
+//         if (tapAction.url_path) {
+//           window.open(tapAction.url_path);
+//         }
+//         break;
+//       case "toggle":
+//         if (tapAction.entity) {
+//           toggleEntity(this.hass, tapAction.entity!);
+//           forwardHaptic("success");
+//         }
+//         break;
+//       case "call-service": {
+//         if (!tapAction.service) {
+//           forwardHaptic("failure");
+//           return;
+//         }
+//         const [domain, service] = tapAction.service.split(".", 2);
+//         this.hass.callService(domain, service, tapAction.service_data);
+//         forwardHaptic("success");
+//       }
+//     }
+//   }
+//   setConfig(config) {
+//     if (!config.sidebarMenu) {
+//       throw new Error("You need to define sidebarMenu");
+//     }
+//     if (!config.cards) {
+//       throw new Error("You need to define cards");
+//     }
+//     this.config = config;
+//     subscribeRenderTemplate(null, (res) => {
+//       console.log('RENDER TEMPLATE RESULT');
+//       console.log(res);
+//       var result = res.match(/<li>(.*?)<\/li>/gs).map(function(val){
+//         return val.replace(/<\/?li>/g,'');
+//       });
+//       this.templateLines = result;
+//       console.log(this.templateLines);
+//     }, {
+//       template: this.config.template,
+//       variables: {config: this.config},
+//       entity_ids: this.config.entity_ids,
+//     });
+//   }
+//   getCardSize() {
+//     return 1;
+//   }
+//   static get styles() {
+//     return css`
+//         :host {}
+//         #wrapper {
+//           display:flex;
+//           flex-direction:row;
+//         }
+//         #wrapper #sidebar {
+//           width:25%;
+//           margin:0 25px;
+//         }
+//         #wrapper #cards {
+//           width:75%;
+//           margin:0 25px;
+//         }
+//         #sidebar .sidebarMenu {
+//           list-style:none;
+//           margin:0 0 30px 4px;
+//           padding: 0 16px 0 0;
+//         }
+//         #sidebar  .sidebarMenu li {
+//           padding: 10px 20px;
+//           border-radius: 12px;
+//           color:inherit;
+//           font-size:20px;
+//           font-weight:300;
+//           white-space: normal;
+//           display:block;
+//         }
+//         #sidebar .sidebarMenu li.active {
+//           background-color: rgba(0,0,0,0.2);
+//         }
+//         #sidebar h1 {
+//           margin-bottom: 30px;
+//           margin-left: 4px;
+//           font-size: 32px;
+//           font-weight: 300;
+//         }
+//         #sidebar .template {
+//           margin:0 0 30px 4px;
+//           padding: 0 16px 0 0;
+//           list-style:none;
+//         }
+//         #sidebarul .template li {
+//           display:block;
+//           color:inherit;
+//           font-size:20px;
+//           font-weight:300;
+//           white-space: normal;
+//         }
+//     `;
+//   }  
+// }
+// customElements.define('sidebar-card', SidebarCard);
