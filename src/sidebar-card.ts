@@ -1,4 +1,4 @@
-import { LitElement, html, css} from "card-tools/src/lit-element";
+import { LitElement, html, css } from 'lit-element';
 import { moreInfo } from "card-tools/src/more-info";
 import { createCard } from "card-tools/src/lovelace-element";
 import { hass } from "card-tools/src/hass";
@@ -36,30 +36,37 @@ class SidebarCard extends LitElement {
     const title = "title" in this.config ? this.config.title : false;
     const clock = this.config.clock && this.hass.states['sensor.time'] ? this.config.clock : false;
     const textColor = "textColor" in this.config ? this.config.textColor : false
-    
+    const addStyle = "style" in this.config ? true : false;
     return html`
-      ${clock ? html `<h1 style="${textColor ? 'color:'+textColor : ''}">${this.hass.states['sensor.time'].state}</h1>`: html ``}
-      ${title ? html `<h1 style="${textColor ? 'color:'+textColor : ''}">${title}</h1>`: html ``}
-      
-      ${this.config.template ? html`
-        <ul class="template" style="${textColor ? 'color:'+textColor : ''}">
-          ${this.templateLines.map(line => {
-            return html`<li>${line}</li>`;
+      ${addStyle ? html`
+        <style>
+          ${this.config.style}
+        </style>
+      ` : html``}
+      <div class="sidebar-inner">
+        ${clock ? html `<h1 class="clock${title ? ' with-title':''}" style="${textColor ? 'color:'+textColor : ''}">${this.hass.states['sensor.time'].state}</h1>`: html ``}
+        ${title ? html `<h1 style="${textColor ? 'color:'+textColor : ''}">${title}</h1>`: html ``}
+        
+        ${this.config.template ? html`
+          <ul class="template" style="${textColor ? 'color:'+textColor : ''}">
+            ${this.templateLines.map(line => {
+              return html`<li>${line}</li>`;
+            })}
+          </ul>
+        ` : html``}
+        ${sidebarMenu.length > 0 ? html`
+        <ul class="sidebarMenu" style="${sidebarMenuColor ? 'color:'+sidebarMenuColor : ''}">
+          ${sidebarMenu.map(sidebarMenuItem => {
+            return html`<li @click="${e => this._menuAction(e)}" data-path="${sidebarMenuItem.navigation_path ? sidebarMenuItem.navigation_path : ''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}" data->${sidebarMenuItem.name}</li>`;
           })}
         </ul>
-      ` : html``}
-      ${sidebarMenu.length > 0 ? html`
-      <ul class="sidebarMenu" style="${sidebarMenuColor ? 'color:'+sidebarMenuColor : ''}">
-        ${sidebarMenu.map(sidebarMenuItem => {
-          return html`<li @click="${e => this._menuAction(e)}" data-path="${sidebarMenuItem.navigation_path ? sidebarMenuItem.navigation_path : ''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}" data->${sidebarMenuItem.name}</li>`;
-        })}
-      </ul>
-      ` : html ``}
+        ` : html ``}
+      </div>
     `;
   }
 
   firstUpdated() {
-    document.querySelectorAll("paper-tab").forEach(paperTab => {
+    getRoot().querySelectorAll("paper-tab").forEach(paperTab => {
       paperTab.addEventListener('click', () => {
         this._updateActiveMenu();
       })
@@ -69,11 +76,10 @@ class SidebarCard extends LitElement {
   updated() { }
 
   _updateActiveMenu() {
-    console.log(document.location.pathname);
-    this.shadowRoot.querySelectorAll.forEach(menuItem => {
+    this.shadowRoot.querySelectorAll('ul.sidebarMenu li').forEach(menuItem => {
       menuItem.classList.remove("active");
     });
-    this.shadowRoot.querySelector('li[data-path="'+document.location.pathname+'"]').classList.add('active');
+    this.shadowRoot.querySelector('ul.sidebarMenu li[data-path="'+document.location.pathname+'"]').classList.add('active');
   }
 
   _menuAction(e) {
@@ -125,11 +131,15 @@ class SidebarCard extends LitElement {
     this.config = config;
 
     if(this.config.template) {
+      console.log('template subscribe');
       subscribeRenderTemplate(null, (res) => {
+        console.log(res);
         var result = res.match(/<li>(.*?)<\/li>/gs).map(function(val){
           return val.replace(/<\/?li>/g,'');
         });
+        console.log(result);
         this.templateLines = result;
+        this.requestUpdate();
       }, {
         template: this.config.template,
         variables: {config: this.config},
@@ -150,10 +160,13 @@ class SidebarCard extends LitElement {
           display: flex;
           flex-direction: column;
         }
+        .sidebar-inner {
+          padding: 20px;
+        }
         .sidebarMenu {
           list-style:none;
-          margin:0 0 30px 4px;
-          padding: 0 16px 0 0;
+          margin: 0;
+          padding: 0;
         }
         .sidebarMenu li {
           padding: 10px 20px;
@@ -169,14 +182,20 @@ class SidebarCard extends LitElement {
         }
 
         h1 {
+          margin-top:0;
           margin-bottom: 30px;
-          margin-left: 4px;
           font-size: 32px;
           font-weight: 300;
         }
+        h1.clock {
+          font-size:60px;
+        }
+        h1.clock.with-title {
+          margin-bottom:0;
+        }
         .template {
-          margin:0 0 30px 4px;
-          padding: 0 16px 0 0;
+          margin: 0;
+          padding: 0;
           list-style:none;
         }
         
@@ -206,25 +225,45 @@ async function buildCard(sidebar, config) {
 async function buildSidebar() {
   let lovelace = getLovelace();
   if(lovelace.config.sidebar) {
-    let root = getRoot();
-    let appLayout:any = root.querySelector('ha-app-layout');
-    // get element to wrap
-    let contentContainer:any = appLayout.shadowRoot.querySelector('#contentContainer');
-    // create wrapper container
-    var wrapper = document.createElement('div');
-    wrapper.setAttribute('id', 'customSidebarWrapper');
-    wrapper.setAttribute('style', 'display:flex;flex-direction:row');
-    // insert wrapper before el in the DOM tree
-    contentContainer.parentNode.insertBefore(wrapper, contentContainer);
-    // move el into wrapper
-    let sidebar = document.createElement('div');
-    sidebar.setAttribute('id', 'customSidebar');
-    sidebar.setAttribute('style', 'width:25%;');
-    wrapper.appendChild(sidebar);
-    wrapper.appendChild(contentContainer);
-    contentContainer.setAttribute('style', 'width:75%;');
-
-    await buildCard(sidebar, lovelace.config.sidebar);
+    if(!lovelace.config.sidebar.width || (lovelace.config.sidebar.width && lovelace.config.sidebar.width > 0 && lovelace.config.sidebar.width > 100 )) {
+      let sidebarWidth = 25;
+      let contentWidth = 75;
+      if(lovelace.config.sidebar.width) {
+        sidebarWidth = lovelace.config.sidebar.width;
+        contentWidth = 100 - sidebarWidth;
+      }
+      
+      let root = getRoot();
+      let appLayout:any = root.querySelector('ha-app-layout');
+      // create css
+      let css = '#customSidebarWrapper { display:flex; flex-direction:row; } #customSidebar { width:'+sidebarWidth+'%; } #contentContainer { width:'+contentWidth+'%; }';
+      let style: any = document.createElement('style');
+      appLayout.shadowRoot.appendChild(style);
+      style.type = 'text/css';
+      if (style.styleSheet){
+        // This is required for IE8 and below.
+        style.styleSheet.cssText = css;
+      } else {
+        style.appendChild(document.createTextNode(css));
+      }
+      // get element to wrap
+      let contentContainer:any = appLayout.shadowRoot.querySelector('#contentContainer');
+      // create wrapper container
+      var wrapper = document.createElement('div');
+      wrapper.setAttribute('id', 'customSidebarWrapper');
+      // insert wrapper before el in the DOM tree
+      contentContainer.parentNode.insertBefore(wrapper, contentContainer);
+      // move el into wrapper
+      let sidebar = document.createElement('div');
+      sidebar.setAttribute('id', 'customSidebar');
+      wrapper.appendChild(sidebar);
+      wrapper.appendChild(contentContainer);
+      await buildCard(sidebar, lovelace.config.sidebar);
+    } else {
+      console.log('Error sidebar in width config!');
+    }
+  } else {
+    console.log('No sidebar in config found!');
   }
 }
 
