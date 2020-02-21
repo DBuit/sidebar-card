@@ -225,7 +225,7 @@ async function buildCard(sidebar, config) {
 async function buildSidebar() {
   let lovelace = getLovelace();
   if(lovelace.config.sidebar) {
-    if(!lovelace.config.sidebar.width || (lovelace.config.sidebar.width && lovelace.config.sidebar.width > 0 && lovelace.config.sidebar.width > 100 )) {
+    if(!lovelace.config.sidebar.width || (lovelace.config.sidebar.width && lovelace.config.sidebar.width > 0 && lovelace.config.sidebar.width < 100 )) {
       let sidebarWidth = 25;
       let contentWidth = 75;
       if(lovelace.config.sidebar.width) {
