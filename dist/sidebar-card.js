@@ -3001,13 +3001,10 @@ class SidebarCard extends LitElement {
         }
         this.config = config;
         if (this.config.template) {
-            console.log('template subscribe');
             subscribeRenderTemplate(null, (res) => {
-                console.log(res);
                 var result = res.match(/<li>(.*?)<\/li>/gs).map(function (val) {
                     return val.replace(/<\/?li>/g, '');
                 });
-                console.log(result);
                 this.templateLines = result;
                 this.requestUpdate();
             }, {
@@ -3078,6 +3075,86 @@ class SidebarCard extends LitElement {
     }
 }
 customElements.define('sidebar-card', SidebarCard);
+function createCSS(sidebarConfig, width) {
+    let sidebarWidth = 25;
+    let contentWidth = 75;
+    let sidebarResponsive = false;
+    if (sidebarConfig.width) {
+        if (typeof sidebarConfig.width == 'number') {
+            sidebarWidth = sidebarConfig.width;
+            contentWidth = 100 - sidebarWidth;
+        }
+        else if (typeof sidebarConfig.width == 'object') {
+            sidebarWidth = sidebarConfig.desktop;
+            contentWidth = 100 - sidebarWidth;
+            sidebarResponsive = true;
+        }
+    }
+    // create css
+    let css = `
+    #customSidebarWrapper { 
+      display:flex;
+      flex-direction:row;
+    }
+  `;
+    if (sidebarResponsive) {
+        if (width <= sidebarConfig.breakpoints.mobile) {
+            css += `
+      #customSidebar {
+        width:` + sidebarConfig.width.mobile + `%;
+      } 
+      #contentContainer {
+        width:` + (100 - sidebarConfig.width.mobile) + `%;
+      }
+    `;
+        }
+        else if (width <= sidebarConfig.breakpoints.tablet) {
+            css += `
+        #customSidebar {
+          width:` + sidebarConfig.width.tablet + `%;
+        } 
+        #contentContainer {
+          width:` + (100 - sidebarConfig.width.tablet) + `%;
+        }
+      `;
+        }
+        else {
+            css += `
+        #customSidebar {
+          width:` + sidebarConfig.width.desktop + `%;
+        } 
+        #contentContainer {
+          width:` + (100 - sidebarConfig.width.desktop) + `%;
+        }
+      `;
+        }
+    }
+    else {
+        css += `
+      #customSidebar {
+        width:` + sidebarWidth + `%;
+      } 
+      #contentContainer {
+        width:` + contentWidth + `%;
+      }
+    `;
+    }
+    return css;
+}
+function subscribeEvens(appLayout, sidebarConfig) {
+    let root = B();
+    window.addEventListener('resize', function () {
+        const width = document.body.clientWidth;
+        appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
+        if (sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile) {
+            console.log('displayMobile');
+            root.querySelector('ch-header').style.display = 'flex';
+        }
+        else if (sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
+            root.querySelector('ch-header').style.display = 'none';
+        }
+    }, true);
+}
 async function buildCard(sidebar, config) {
     config.type = 'custom:sidebar-card';
     const sidebarCard = createCard(config);
@@ -3088,18 +3165,30 @@ async function buildCard(sidebar, config) {
 async function buildSidebar() {
     let lovelace = F();
     if (lovelace.config.sidebar) {
-        if (!lovelace.config.sidebar.width || (lovelace.config.sidebar.width && lovelace.config.sidebar.width > 0 && lovelace.config.sidebar.width < 100)) {
-            let sidebarWidth = 25;
-            let contentWidth = 75;
-            if (lovelace.config.sidebar.width) {
-                sidebarWidth = lovelace.config.sidebar.width;
-                contentWidth = 100 - sidebarWidth;
-            }
+        const sidebarConfig = lovelace.config.sidebar;
+        if (!sidebarConfig.width || (sidebarConfig.width && typeof sidebarConfig.width == 'number' && sidebarConfig.width > 0 && sidebarConfig.width < 100) || (sidebarConfig.width && typeof sidebarConfig.width == 'object')) {
             let root = B();
+            if (sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
+                root.querySelector('ch-header').style.display = 'none';
+            }
+            if (!sidebarConfig.breakpoints) {
+                sidebarConfig.breakpoints = {
+                    'tablet': 1024,
+                    'mobile': 768
+                };
+            }
+            else if (sidebarConfig.breakpoints) {
+                if (!sidebarConfig.breakpoints.mobile) {
+                    sidebarConfig.breakpoints.mobile = 768;
+                }
+                if (!sidebarConfig.breakpoints.tablet) {
+                    sidebarConfig.breakpoints.tablet = 1024;
+                }
+            }
             let appLayout = root.querySelector('ha-app-layout');
-            // create css
-            let css = '#customSidebarWrapper { display:flex; flex-direction:row; } #customSidebar { width:' + sidebarWidth + '%; } #contentContainer { width:' + contentWidth + '%; }';
+            let css = createCSS(sidebarConfig, document.body.clientWidth);
             let style = document.createElement('style');
+            style.setAttribute('id', 'customSidebarStyle');
             appLayout.shadowRoot.appendChild(style);
             style.type = 'text/css';
             if (style.styleSheet) {
@@ -3121,7 +3210,8 @@ async function buildSidebar() {
             sidebar.setAttribute('id', 'customSidebar');
             wrapper.appendChild(sidebar);
             wrapper.appendChild(contentContainer);
-            await buildCard(sidebar, lovelace.config.sidebar);
+            await buildCard(sidebar, sidebarConfig);
+            subscribeEvens(appLayout, sidebarConfig);
         }
         else {
             console.log('Error sidebar in width config!');
