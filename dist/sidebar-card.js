@@ -2924,13 +2924,6 @@ class SidebarCard extends LitElement {
         ${clock ? html `<h1 class="clock${title ? ' with-title' : ''}" style="${textColor ? 'color:' + textColor : ''}">${this.hass.states['sensor.time'].state}</h1>` : html ``}
         ${title ? html `<h1 style="${textColor ? 'color:' + textColor : ''}">${title}</h1>` : html ``}
         
-        ${this.config.template ? html `
-          <ul class="template" style="${textColor ? 'color:' + textColor : ''}">
-            ${this.templateLines.map(line => {
-            return html `<li>${line}</li>`;
-        })}
-          </ul>
-        ` : html ``}
         ${sidebarMenu.length > 0 ? html `
         <ul class="sidebarMenu" style="${sidebarMenuColor ? 'color:' + sidebarMenuColor : ''}">
           ${sidebarMenu.map(sidebarMenuItem => {
@@ -2938,6 +2931,15 @@ class SidebarCard extends LitElement {
         })}
         </ul>
         ` : html ``}
+
+        ${this.config.template ? html `
+          <ul class="template" style="${textColor ? 'color:' + textColor : ''}">
+            ${this.templateLines.map(line => {
+            return html `<li>${line}</li>`;
+        })}
+          </ul>
+        ` : html ``}
+        
       </div>
     `;
     }
@@ -3030,14 +3032,17 @@ class SidebarCard extends LitElement {
         }
         .sidebarMenu {
           list-style:none;
-          margin: 0;
-          padding: 0;
+          margin: 20px 0;
+          padding: 20px 0;
+          border-top: 1px solid rgba(255,255,255,0.2);
+          border-bottom: 1px solid rgba(255,255,255,0.2);
         }
         .sidebarMenu li {
           padding: 10px 20px;
           border-radius: 12px;
           color:inherit;
-          font-size:20px;
+          font-size:18px;
+          line-height:18px;
           font-weight:300;
           white-space: normal;
           display:block;
@@ -3048,12 +3053,14 @@ class SidebarCard extends LitElement {
 
         h1 {
           margin-top:0;
-          margin-bottom: 30px;
+          margin-bottom: 20px;
           font-size: 32px;
+          line-height: 32px;
           font-weight: 300;
         }
         h1.clock {
           font-size:60px;
+          line-height: 60px;
         }
         h1.clock.with-title {
           margin-bottom:0;
@@ -3067,7 +3074,8 @@ class SidebarCard extends LitElement {
         .template li {
           display:block;
           color:inherit;
-          font-size:20px;
+          font-size:18px;
+          line-height:18px;
           font-weight:300;
           white-space: normal;
         }
