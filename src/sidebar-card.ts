@@ -17,6 +17,9 @@ class SidebarCard extends LitElement {
   shadowRoot: any;
   renderCard: any;
   templateLines: any = [];
+  clock = false;
+  digitalClock = false;
+  digitalClockWithSeconds = false;
 
   static get properties() {
     return {
@@ -32,10 +35,10 @@ class SidebarCard extends LitElement {
   
   render() {
     const sidebarMenu = this.config.sidebarMenu;
-    const sidebarMenuColor = this.config.sidebarMenuColor;
     const title = "title" in this.config ? this.config.title : false;
-    const clock = this.config.clock && this.hass.states['sensor.time'] ? this.config.clock : false;
-    const textColor = "textColor" in this.config ? this.config.textColor : false;
+    this.clock = this.config.clock ? this.config.clock : false;
+    this.digitalClock = this.config.digitalClock ? this.config.digitalClock : false;
+    this.digitalClockWithSeconds = this.config.digitalClockWithSeconds ? this.config.digitalClockWithSeconds : false;
     const addStyle = "style" in this.config ? true : false;
     return html`
       ${addStyle ? html`
@@ -44,19 +47,29 @@ class SidebarCard extends LitElement {
         </style>
       ` : html``}
       <div class="sidebar-inner">
-        ${clock ? html `<h1 class="clock${title ? ' with-title':''}" style="${textColor ? 'color:'+textColor : ''}">${this.hass.states['sensor.time'].state}</h1>`: html ``}
-        ${title ? html `<h1 style="${textColor ? 'color:'+textColor : ''}">${title}</h1>`: html ``}
+        ${this.digitalClock ? html`<h1 class="digitalClock${title ? ' with-title':''}${this.digitalClockWithSeconds ? ' with-seconds' : ''}"></h1>`: html``}
+        ${this.clock ? html`
+          <div class="clock">
+            <div class="wrap">
+              <span class="hour"></span>
+              <span class="minute"></span>
+              <span class="second"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
+        ` : html``}
+        ${title ? html`<h1>${title}</h1>`: html``}
         
         ${sidebarMenu.length > 0 ? html`
-        <ul class="sidebarMenu" style="${sidebarMenuColor ? 'color:'+sidebarMenuColor : ''}">
+        <ul class="sidebarMenu">
           ${sidebarMenu.map(sidebarMenuItem => {
             return html`<li @click="${e => this._menuAction(e)}" data-path="${sidebarMenuItem.navigation_path ? sidebarMenuItem.navigation_path : ''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}" data->${sidebarMenuItem.name}</li>`;
           })}
         </ul>
-        ` : html ``}
+        ` : html``}
 
         ${this.config.template ? html`
-          <ul class="template" style="${textColor ? 'color:'+textColor : ''}">
+          <ul class="template">
             ${this.templateLines.map(line => {
               return html`<li>${line}</li>`;
             })}
@@ -67,12 +80,51 @@ class SidebarCard extends LitElement {
     `;
   }
 
+  _runClock() {
+    const date = new Date();
+  
+    const fullhours = date.getHours().toString();
+    const hours = ((date.getHours() + 11) % 12 + 1);
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+    
+    const hour = hours * 30;
+    const minute = minutes * 6;
+    const second = seconds * 6;
+    
+    if(this.clock) {
+      this.shadowRoot.querySelector('.hour').style.transform = `rotate(${hour}deg)`
+      this.shadowRoot.querySelector('.minute').style.transform = `rotate(${minute}deg)`
+      this.shadowRoot.querySelector('.second').style.transform = `rotate(${second}deg)`
+    }
+    if(this.digitalClock) {
+      const minutesString = minutes.toString();
+      var digitalTime = fullhours.length < 2 ? '0' + fullhours + ':' : fullhours + ':';
+      if(this.digitalClockWithSeconds) { 
+        digitalTime += minutesString.length < 2 ? '0' + minutesString + ':' : minutesString + ':';
+        const secondsString = seconds.toString();
+        digitalTime += secondsString.length < 2 ? '0' + secondsString : secondsString
+      } else {
+        digitalTime += minutesString.length < 2 ? '0' + minutesString : minutesString;
+      }
+      this.shadowRoot.querySelector('.digitalClock').textContent = digitalTime;
+    }
+  }
+
   firstUpdated() {
     getRoot().querySelectorAll("paper-tab").forEach(paperTab => {
       paperTab.addEventListener('click', () => {
         this._updateActiveMenu();
       })
     });
+    if(this.clock || this.digitalClock) {
+      const inc = 1000;
+      const self = this;
+      self._runClock();
+      setInterval(function () {
+        self._runClock();
+      }, inc);
+    }
   }
   
   updated() { }
@@ -158,6 +210,15 @@ class SidebarCard extends LitElement {
           height: 100%;
           display: flex;
           flex-direction: column;
+          // --face-color: #FFF;
+          // --face-border-color: #FFF;
+          // --clock-hands-color: #000;
+          // --clock-seconds-hand-color: #FF4B3E;
+          // --clock-middle-background: #FFF;
+          // --clock-middle-border: #000;
+          // --sidebar-background: #FFF;
+          // --sidebar-text-color: #000;
+          background-color: var(--sidebar-background, #FFF);
         }
         .sidebar-inner {
           padding: 20px;
@@ -168,6 +229,7 @@ class SidebarCard extends LitElement {
           padding: 20px 0;
           border-top: 1px solid rgba(255,255,255,0.2);
           border-bottom: 1px solid rgba(255,255,255,0.2);
+          color: var(--sidebar-text-color, #000);
         }
         .sidebarMenu li {
           padding: 10px 20px;
@@ -188,19 +250,25 @@ class SidebarCard extends LitElement {
           margin-bottom: 20px;
           font-size: 32px;
           line-height: 32px;
-          font-weight: 300;
+          font-weight: 200;
+          color: var(--sidebar-text-color, #000);
         }
-        h1.clock {
+        h1.digitalClock {
           font-size:60px;
           line-height: 60px;
         }
-        h1.clock.with-title {
+        h1.digitalClock.with-seconds {
+          font-size: 48px;
+          line-height:48px;
+        }
+        h1.digitalClock.with-title {
           margin-bottom:0;
         }
         .template {
           margin: 0;
           padding: 0;
           list-style:none;
+          color: var(--sidebar-text-color, #000);
         }
         
         .template li {
@@ -210,6 +278,87 @@ class SidebarCard extends LitElement {
           line-height:18px;
           font-weight:300;
           white-space: normal;
+        }
+
+        .clock {
+          margin:20px 0;
+          position:relative;
+          padding-top: calc(100% - 10px);
+          width: calc(100% - 10px);
+          border-radius: 100%;
+          background: var(--face-color, #FFF);
+          font-family: "Montserrat";
+          border: 5px solid var(--face-border-color, #FFF);
+          box-shadow: inset 2px 3px 8px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .clock .wrap {
+          overflow: hidden;
+          position: absolute;
+          top:0;
+          left:0;
+          width: 100%;
+          height: 100%;
+          border-radius: 100%;
+        }
+        
+        .clock .minute,
+        .clock .hour {
+          position: absolute;
+          height: 28%;
+          width: 6px;
+          margin: auto;
+          top: -27%;
+          left: 0;
+          bottom: 0;
+          right: 0;
+          background: var(--clock-hands-color, #000);
+          transform-origin: bottom center;
+          transform: rotate(0deg);
+          box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.4);
+          z-index: 1;
+        }
+        
+        .clock .minute {
+          position: absolute;
+          height: 41%;
+          width: 4px;
+          top: -38%;
+          left: 0;
+          box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.4);
+          transform: rotate(90deg);
+        }
+        
+        .clock .second {
+          position: absolute;
+          top: -48%;
+          height: 48%;
+          width: 2px;
+          margin: auto;
+          left: 0;
+          bottom: 0;
+          right: 0;
+          border-radius: 4px;
+          background: var(--clock-seconds-hand-color, #FF4B3E);
+          transform-origin: bottom center;
+          transform: rotate(180deg);
+          z-index: 1;
+        }
+        
+        .clock .dot {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          width: 12px;
+          height: 12px;
+          border-radius: 100px;
+          background: var(--clock-middle-background, #FFF);
+          border: 2px solid var(--clock-middle-border, #000);
+          border-radius: 100px;
+          margin: auto;
+          z-index: 1;
         }
     `;
   }  
@@ -287,7 +436,6 @@ function subscribeEvens(appLayout: any, sidebarConfig) {
     const width = document.body.clientWidth;
     appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
     if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile) {
-      console.log('displayMobile');
       root.querySelector('ch-header').style.display = 'flex';
     } else if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
       root.querySelector('ch-header').style.display = 'none';
@@ -394,8 +542,8 @@ buildSidebar();
 //       <div id="wrapper">
 
 //         <div id="sidebar">
-//           ${clock ? html `<h1 style="${textColor ? 'color:'+textColor : ''}">${this.hass.states['sensor.time'].state}</h1>`: html ``}
-//           ${title ? html `<h1 style="${textColor ? 'color:'+textColor : ''}">${title}</h1>`: html ``}
+//           ${clock ? html`<h1 style="${textColor ? 'color:'+textColor : ''}">${this.hass.states['sensor.time'].state}</h1>`: html``}
+//           ${title ? html`<h1 style="${textColor ? 'color:'+textColor : ''}">${title}</h1>`: html``}
           
 //           <ul class="template" style="${textColor ? 'color:'+textColor : ''}">
 //             ${this.templateLines.map(line => {
@@ -408,7 +556,7 @@ buildSidebar();
 //               return html`<li @click="${e => this._menuAction(e)}" class="${sidebarMenuItem.active ? 'active':''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}" data->${sidebarMenuItem.name}</li>`;
 //             })}
 //           </ul>
-//         ` : html ``}
+//         ` : html``}
 //         </div>
 //         <div id="cards">
 //         </div>
