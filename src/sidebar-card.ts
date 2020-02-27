@@ -127,7 +127,9 @@ class SidebarCard extends LitElement {
     }
   }
   
-  updated() { }
+  updated() {
+    console.log('updated');
+  }
 
   _updateActiveMenu() {
     this.shadowRoot.querySelectorAll('ul.sidebarMenu li').forEach(menuItem => {
@@ -455,7 +457,7 @@ async function buildCard(sidebar, config) {
 async function buildSidebar() {
   let lovelace = getLovelace();
   if(lovelace.config.sidebar) {
-    const sidebarConfig = lovelace.config.sidebar;
+    const sidebarConfig = Object.assign({}, lovelace.config.sidebar);
     if(!sidebarConfig.width || (sidebarConfig.width && typeof sidebarConfig.width == 'number' && sidebarConfig.width > 0 && sidebarConfig.width < 100 ) || (sidebarConfig.width && typeof sidebarConfig.width == 'object')) {
       let root: any = getRoot();
       
