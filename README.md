@@ -1,7 +1,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
 
 # Sidebar card [WIP]
-This card adds a sidebar to your interface which you can configure globally so every page has the sidebar. It can replace your top navigation but can also give extra functionality.
+This card adds a sidebar to your interface which you can configure globally and set on every view that you wanna display the sidebar. It can replace your top navigation but can also give extra functionality.
 
 <a href="https://www.buymeacoffee.com/ZrUK14i" target="_blank"><img height="41px" width="167px" src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee"></a>
 
@@ -28,7 +28,9 @@ resources:
 
 ## Configuration
 
-The YAML configuration happens at the root of your Lovelace config under sidebar: at the same level as resources: and views:. Example:
+The YAML configuration happens at the root of your Lovelace config under sidebar: at the same level as resources: and views:.
+Here you define what you wanna display in the sidebar. 
+Than you add the custom card `custom:sidebar-card` as the first card on your views and set the other cards under the `cards:` as in the example below:
 
 ```
 resources:
@@ -37,6 +39,12 @@ resources:
 sidebar:
   title: "Sidebar title"
 views:
+  - title: "Home"
+    cards:
+      - type: "custom:sidebar-card"
+        cards:
+          - type: "custom:homekit-card"
+          ....
 ....
 ```
 
@@ -105,7 +113,8 @@ Below the table with options for these actions
 | `url_path` | string | none | Eg: `https://www.google.fr` | URL to open on click when action is `url`. The URL will open in a new tab |
 | `service` | string | none | Any service | Service to call (e.g. `media_player.media_play_pause`) when `action` defined as `call-service` |
 | `service_data` | object | none | Any service data | Service data to include (e.g. `entity_id: media_player.bedroom`)|
-
+| `icon` | string | none | Any icon `mdi:...` | Display icon besided the name |
+| `state` | string | none | Any entity `light.demo` | Set an entity (light, switch etc.) and when this entities state is on the item will display on and when it is off it will be displayed off |
 
 When you use the `navigation` action type (see example below) and set the navigation_path to the lovelace views it will act as a normal menu and display an active state when you are on the url you defined in the sidebarMenu.
 
@@ -125,6 +134,11 @@ sidebar:
     - action: navigate
       navigation_path: "/lovelace/4"
       name: "Test"
+    - action: toggle
+      entity: light.beganegrond
+      name: Lichtstrip
+      state: light.beganegrond
+      icon: mdi:led-strip-variant
 ```
 
 ##### template
@@ -168,7 +182,7 @@ Example:
 sidebar:
   style: |
     :host {
-        --sidebar-background: #FFF;
+        --sidebar-background: transparent;
         --sidebar-text-color: #000;
         --face-color: #FFF;
         --face-border-color: #FFF;
