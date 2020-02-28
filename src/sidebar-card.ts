@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit-element';
 import { moreInfo } from "card-tools/src/more-info";
-import { createCard } from "card-tools/src/lovelace-element";
-import { hass } from "card-tools/src/hass";
+// import { createCard } from "card-tools/src/lovelace-element";
+import { hass, provideHass } from "card-tools/src/hass";
 import {subscribeRenderTemplate} from "card-tools/src/templates";
 import {
   toggleEntity,
@@ -39,94 +39,48 @@ class SidebarCard extends LitElement {
     this.clock = this.config.clock ? this.config.clock : false;
     this.digitalClock = this.config.digitalClock ? this.config.digitalClock : false;
     this.digitalClockWithSeconds = this.config.digitalClockWithSeconds ? this.config.digitalClockWithSeconds : false;
-
-    // Breakpoints
-    if(!this.config.breakpoints) {
-      this.config.breakpoints = {
-        'tablet': 1024,
-        'mobile': 768
-      }
-    } else if(this.config.breakpoints) {
-      if(!this.config.breakpoints.mobile) {
-        this.config.breakpoints.mobile = 768;
-      }
-      if(!this.config.breakpoints.tablet) {
-        this.config.breakpoints.tablet = 1024;
-      }
-    }
-    
+    const addStyle = "style" in this.config ? true : false;
     return html`
-      ${this.config.style ? html`
+      ${addStyle ? html`
         <style>
           ${this.config.style}
         </style>
-      `:html``}
-      <style>
-        ${this._createCSS()}
-      </style>
-      
-      <div id="wrapper">
-
-        <div id="sidebar">
-          <div class="sidebar-inner">
-            ${this.digitalClock ? html`<h1 class="digitalClock${title ? ' with-title':''}${this.digitalClockWithSeconds ? ' with-seconds' : ''}"></h1>`: html``}
-            ${this.clock ? html`
-              <div class="clock">
-                <div class="wrap">
-                  <span class="hour"></span>
-                  <span class="minute"></span>
-                  <span class="second"></span>
-                  <span class="dot"></span>
-                </div>
-              </div>
-            ` : html``}
-            ${title ? html`<h1>${title}</h1>`: html``}
-            
-            ${sidebarMenu.length > 0 ? html`
-            <ul class="sidebarMenu">
-              ${sidebarMenu.map(sidebarMenuItem => {
-                return html`<li @click="${e => this._menuAction(e)}" class="${sidebarMenuItem.state && this.hass.states[sidebarMenuItem.state].state != 'off' && this.hass.states[sidebarMenuItem.state].state != 'unavailable' ? 'active' : ''}" data-type="${sidebarMenuItem.action}" data-path="${sidebarMenuItem.navigation_path ? sidebarMenuItem.navigation_path : ''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}">
-                  ${sidebarMenuItem.name}
-                  ${sidebarMenuItem.icon ? html`<ha-icon icon="${sidebarMenuItem.icon}" />`:html``}
-                </li>`;
-              })}
-            </ul>
-            ` : html``}
-
-            ${this.config.template ? html`
-              <ul class="template">
-                ${this.templateLines.map(line => {
-                  return html`<li>${line}</li>`;
-                })}
-              </ul>
-            ` : html``}
-            
+      ` : html``}
+      <div class="sidebar-inner">
+        ${this.digitalClock ? html`<h1 class="digitalClock${title ? ' with-title':''}${this.digitalClockWithSeconds ? ' with-seconds' : ''}"></h1>`: html``}
+        ${this.clock ? html`
+          <div class="clock">
+            <div class="wrap">
+              <span class="hour"></span>
+              <span class="minute"></span>
+              <span class="second"></span>
+              <span class="dot"></span>
+            </div>
           </div>
-        </div>
-        <div id="cards">
-        </div>
+        ` : html``}
+        ${title ? html`<h1>${title}</h1>`: html``}
+        
+        ${sidebarMenu.length > 0 ? html`
+        <ul class="sidebarMenu">
+          ${sidebarMenu.map(sidebarMenuItem => {
+            return html`<li @click="${e => this._menuAction(e)}" class="${sidebarMenuItem.state && this.hass.states[sidebarMenuItem.state].state != 'off' && this.hass.states[sidebarMenuItem.state].state != 'unavailable' ? 'active' : ''}" data-type="${sidebarMenuItem.action}" data-path="${sidebarMenuItem.navigation_path ? sidebarMenuItem.navigation_path : ''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}">
+              ${sidebarMenuItem.name}
+              ${sidebarMenuItem.icon ? html`<ha-icon icon="${sidebarMenuItem.icon}" />`:html``}
+            </li>`;
+          })}
+        </ul>
+        ` : html``}
 
+        ${this.config.template ? html`
+          <ul class="template">
+            ${this.templateLines.map(line => {
+              return html`<li>${line}</li>`;
+            })}
+          </ul>
+        ` : html``}
+        
       </div>
     `;
-  }
-
-  async build_card(card) {
-    const el = createCard(card);
-    el.hass = hass();
-    this.shadowRoot.querySelector("#cards").appendChild(el);
-    return new Promise((resolve) =>
-      el.updateComplete
-        ? el.updateComplete.then(() => resolve(el))
-        : resolve(el)
-      );
-  }
-
-  async build_cards() {
-    // Clear out any cards in the staging area which might have been built but not placed
-    const cards = this.shadowRoot.querySelector("#cards");
-    while(cards.lastChild)
-    cards.removeChild(cards.lastChild);
-    return Promise.all(this.config.cards.map((c) => this.build_card(c)));
   }
 
   _runClock() {
@@ -160,55 +114,13 @@ class SidebarCard extends LitElement {
     }
   }
 
-  _createCSS() {
-    // Width
-    let sidebarWidth = 25;
-    let contentWidth = 75;
-    let sidebarResponsive = false;
-    if(this.config.width) {
-      if(typeof this.config.width == 'number') {
-        sidebarWidth = this.config.width;
-        contentWidth = 100 - sidebarWidth;
-      } else if(typeof this.config.width == 'object') {
-        sidebarWidth = this.config.desktop;
-        contentWidth = 100 - sidebarWidth;
-        sidebarResponsive = true;
-      }
-    }
-
-    if(sidebarResponsive) {
-      return html`
-          :host {
-            --sidebar-width:${this.config.width.desktop}%;
-            --content-width:${(100 - this.config.width.desktop)}%;
-          }
-          @media (max-width: ${this.config.breakpoints.tablet}px) {
-            :host {
-              --sidebar-width:${this.config.width.tablet}%;
-              --content-width:${(100 - this.config.width.tablet)}%;
-            }
-          }
-          @media (max-width: ${this.config.breakpoints.mobile}px) {
-            :host {
-              --sidebar-width:${this.config.width.mobile}%;
-              --content-width:${(100 - this.config.width.mobile)}%;
-            }
-          }
-        `;
-    } else {
-      return html`
-        :host {
-          --sidebar-width:${sidebarWidth}%;
-          --content-width:${contentWidth}%;
-        }
-      `;
-    }
-  }
-  
-
   firstUpdated() {
-    this._updateActiveMenu();
-    this._subscribeEvens(this.config);
+    provideHass(this);
+    getRoot().querySelectorAll("paper-tab").forEach(paperTab => {
+      paperTab.addEventListener('click', () => {
+        this._updateActiveMenu();
+      })
+    });
     if(this.clock || this.digitalClock) {
       const inc = 1000;
       const self = this;
@@ -218,23 +130,6 @@ class SidebarCard extends LitElement {
       }, inc);
     }
   }
-  
-  async updated() {
-    await this.build_cards();
-  }
-
-  _subscribeEvens(config) {
-    let root: any = getRoot();
-    window.addEventListener('resize', function() {
-      const width = document.body.clientWidth;
-      if(config.hideTopMenu && config.hideTopMenu === true && config.showTopMenuOnMobile && config.showTopMenuOnMobile === true && width <= config.breakpoints.mobile) {
-        root.querySelector('ch-header').style.display = 'flex';
-      } else if(config.hideTopMenu && config.hideTopMenu === true) {
-        root.querySelector('ch-header').style.display = 'none';
-      }
-    }, true);
-  }
-  
 
   _updateActiveMenu() {
     this.shadowRoot.querySelectorAll('ul.sidebarMenu li[data-type="navigate"]').forEach(menuItem => {
@@ -286,15 +181,10 @@ class SidebarCard extends LitElement {
   }
   
   setConfig(config) {
-    if (!config.cards) {
-      throw new Error("You need to define cards");
+    if (!config.sidebarMenu) {
+      throw new Error("You need to define sidebarMenu");
     }
-    this.config = Object.assign({}, config);
-
-    let lovelace = getLovelace();
-    if(lovelace.config.sidebar) {
-      this.config = {...this.config, ...lovelace.config.sidebar }
-    }
+    this.config = config;
 
     if(this.config.template) {
       subscribeRenderTemplate(null, (res) => {
@@ -328,23 +218,9 @@ class SidebarCard extends LitElement {
           // --clock-seconds-hand-color: #FF4B3E;
           // --clock-middle-background: #FFF;
           // --clock-middle-border: #000;
-          // --sidebar-background: transparent;
+          // --sidebar-background: #FFF;
           // --sidebar-text-color: #000;
-        }
-        #wrapper {
-          display:flex;
-          flex-direction:row;
-          height:100%;
-        }
-
-        #wrapper #sidebar {
-          overflow: hidden;
-          width: var(--sidebar-width, 25%);
-          background-color: var(--sidebar-background, transparent);
-        }
-
-        #wrapper #cards {
-          width: var(--content-width, 75%);
+          background-color: var(--sidebar-background, #FFF);
         }
         .sidebar-inner {
           padding: 20px;
@@ -377,7 +253,6 @@ class SidebarCard extends LitElement {
         .sidebarMenu li.active {
           background-color: rgba(0,0,0,0.2);
         }
-
         h1 {
           margin-top:0;
           margin-bottom: 20px;
@@ -499,3 +374,157 @@ class SidebarCard extends LitElement {
 }
 
 customElements.define('sidebar-card', SidebarCard);
+
+function createCSS(sidebarConfig: any, width: number) {
+  let sidebarWidth = 25;
+  let contentWidth = 75;
+  let sidebarResponsive = false;
+  if(sidebarConfig.width) {
+    if(typeof sidebarConfig.width == 'number') {
+      sidebarWidth = sidebarConfig.width;
+      contentWidth = 100 - sidebarWidth;
+    } else if(typeof sidebarConfig.width == 'object') {
+      sidebarWidth = sidebarConfig.desktop;
+      contentWidth = 100 - sidebarWidth;
+      sidebarResponsive = true;
+    }
+  }
+  // create css
+  let css = `
+    #customSidebarWrapper { 
+      display:flex;
+      flex-direction:row;
+    }
+  `;
+  if(sidebarResponsive) {
+    if(width <= sidebarConfig.breakpoints.mobile) {
+      css += `
+      #customSidebar {
+        width:`+sidebarConfig.width.mobile+`%;
+      } 
+      #contentContainer {
+        width:`+(100 - sidebarConfig.width.mobile)+`%;
+      }
+    `;
+    } else if (width <= sidebarConfig.breakpoints.tablet) {
+        css += `
+        #customSidebar {
+          width:`+sidebarConfig.width.tablet+`%;
+        } 
+        #contentContainer {
+          width:`+(100 - sidebarConfig.width.tablet)+`%;
+        }
+      `;
+    } else {
+        css += `
+        #customSidebar {
+          width:`+sidebarConfig.width.desktop+`%;
+        } 
+        #contentContainer {
+          width:`+(100 - sidebarConfig.width.desktop)+`%;
+        }
+      `;
+    }
+  } else {
+    css += `
+      #customSidebar {
+        width:`+sidebarWidth+`%;
+      } 
+      #contentContainer {
+        width:`+contentWidth+`%;
+      }
+    `;
+  }
+  return css
+}
+
+function subscribeEvens(appLayout: any, sidebarConfig) {
+  let root: any = getRoot();
+  window.addEventListener('resize', function() {
+    const width = document.body.clientWidth;
+    appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
+    if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile) {
+      root.querySelector('ch-header').style.display = 'flex';
+    } else if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
+      root.querySelector('ch-header').style.display = 'none';
+    }
+  }, true);
+}
+
+async function buildCard(sidebar, config) {
+  // config.type = 'custom:sidebar-card';
+  // const sidebarCard = createCard(config);
+  // sidebarCard.hass = hass();
+  // sidebar.appendChild(sidebarCard);
+  // return new Promise((resolve) =>
+  //   sidebarCard.updateComplete ? sidebarCard.updateComplete.then(() => resolve(sidebarCard)): resolve(sidebarCard)
+  // );
+  const sidebarCard = document.createElement("sidebar-card") as SidebarCard;
+  sidebarCard.setConfig(config);
+  sidebarCard.hass = hass();
+  // sidebarCard.hass = hass()!;
+  // sidebarCard.config = config!;
+
+  sidebar.appendChild(sidebarCard);
+}
+async function buildSidebar() {
+  let lovelace = getLovelace();
+  if(lovelace.config.sidebar) {
+    const sidebarConfig = Object.assign({}, lovelace.config.sidebar);
+    if(!sidebarConfig.width || (sidebarConfig.width && typeof sidebarConfig.width == 'number' && sidebarConfig.width > 0 && sidebarConfig.width < 100 ) || (sidebarConfig.width && typeof sidebarConfig.width == 'object')) {
+      let root: any = getRoot();
+      
+      if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
+        root.querySelector('ch-header').style.display = 'none';
+      }
+
+      if(!sidebarConfig.breakpoints) {
+        sidebarConfig.breakpoints = {
+          'tablet': 1024,
+          'mobile': 768
+        }
+      } else if(sidebarConfig.breakpoints) {
+        if(!sidebarConfig.breakpoints.mobile) {
+          sidebarConfig.breakpoints.mobile = 768;
+        }
+        if(!sidebarConfig.breakpoints.tablet) {
+          sidebarConfig.breakpoints.tablet = 1024;
+        }
+      }
+      
+      let appLayout = root.querySelector('ha-app-layout');
+      console.log(appLayout);
+      let css = createCSS(sidebarConfig, document.body.clientWidth);
+      let style: any = document.createElement('style');
+      style.setAttribute('id', 'customSidebarStyle');
+      appLayout.shadowRoot.appendChild(style);
+      style.type = 'text/css';
+      if (style.styleSheet){
+        // This is required for IE8 and below.
+        style.styleSheet.cssText = css;
+      } else {
+        style.appendChild(document.createTextNode(css));
+      }
+      // get element to wrap
+      let contentContainer:any = appLayout.shadowRoot.querySelector('#contentContainer');
+      // create wrapper container
+      var wrapper = document.createElement('div');
+      wrapper.setAttribute('id', 'customSidebarWrapper');
+      // insert wrapper before el in the DOM tree
+      contentContainer.parentNode.insertBefore(wrapper, contentContainer);
+      // move el into wrapper
+      let sidebar = document.createElement('div');
+      sidebar.setAttribute('id', 'customSidebar');
+      wrapper.appendChild(sidebar);
+      wrapper.appendChild(contentContainer);
+      await buildCard(sidebar, sidebarConfig);
+      subscribeEvens(appLayout, sidebarConfig);
+    } else {
+      console.log('Error sidebar in width config!');
+    }
+  } else {
+    console.log('No sidebar in config found!');
+  }
+}
+
+buildSidebar();

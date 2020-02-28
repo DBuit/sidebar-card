@@ -1,7 +1,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
 
 # Sidebar card [WIP]
-This card adds a sidebar to your interface which you can configure globally and set on every view that you wanna display the sidebar. It can replace your top navigation but can also give extra functionality.
+This card adds a sidebar to your interface which you can configure globally so every page has the sidebar. It can replace your top navigation but can also give extra functionality.
 
 <a href="https://www.buymeacoffee.com/ZrUK14i" target="_blank"><img height="41px" width="167px" src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee"></a>
 
@@ -28,9 +28,7 @@ resources:
 
 ## Configuration
 
-The YAML configuration happens at the root of your Lovelace config under sidebar: at the same level as resources: and views:.
-Here you define what you wanna display in the sidebar. 
-Than you add the custom card `custom:sidebar-card` as the first card on your views and set the other cards under the `cards:` as in the example below:
+The YAML configuration happens at the root of your Lovelace config under sidebar: at the same level as resources: and views:. Example:
 
 ```
 resources:
@@ -39,12 +37,6 @@ resources:
 sidebar:
   title: "Sidebar title"
 views:
-  - title: "Home"
-    cards:
-      - type: "custom:sidebar-card"
-        cards:
-          - type: "custom:homekit-card"
-          ....
 ....
 ```
 
@@ -182,7 +174,7 @@ Example:
 sidebar:
   style: |
     :host {
-        --sidebar-background: transparent;
+        --sidebar-background: #FFF;
         --sidebar-text-color: #000;
         --face-color: #FFF;
         --face-border-color: #FFF;
