@@ -60,7 +60,7 @@ class SidebarCard extends LitElement {
         ` : html``}
         ${title ? html`<h1>${title}</h1>`: html``}
         
-        ${sidebarMenu.length > 0 ? html`
+        ${sidebarMenu && sidebarMenu.length > 0 ? html`
         <ul class="sidebarMenu">
           ${sidebarMenu.map(sidebarMenuItem => {
             return html`<li @click="${e => this._menuAction(e)}" class="${sidebarMenuItem.state && this.hass.states[sidebarMenuItem.state].state != 'off' && this.hass.states[sidebarMenuItem.state].state != 'unavailable' ? 'active' : ''}" data-type="${sidebarMenuItem.action}" data-path="${sidebarMenuItem.navigation_path ? sidebarMenuItem.navigation_path : ''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}">
@@ -135,7 +135,10 @@ class SidebarCard extends LitElement {
     this.shadowRoot.querySelectorAll('ul.sidebarMenu li[data-type="navigate"]').forEach(menuItem => {
       menuItem.classList.remove("active");
     });
-    this.shadowRoot.querySelector('ul.sidebarMenu li[data-path="'+document.location.pathname+'"]').classList.add('active');
+    let activeEl = this.shadowRoot.querySelector('ul.sidebarMenu li[data-path="'+document.location.pathname+'"]');
+    if(activeEl) {
+      activeEl.classList.add('active');
+    }
   }
 
   _menuAction(e) {
@@ -181,9 +184,6 @@ class SidebarCard extends LitElement {
   }
   
   setConfig(config) {
-    if (!config.sidebarMenu) {
-      throw new Error("You need to define sidebarMenu");
-    }
     this.config = config;
 
     if(this.config.template) {
