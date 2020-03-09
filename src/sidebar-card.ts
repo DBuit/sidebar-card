@@ -188,7 +188,7 @@ class SidebarCard extends LitElement {
 
     if(this.config.template) {
       subscribeRenderTemplate(null, (res) => {
-        var result = res.match(/<li>(.*?)<\/li>/gs).map(function(val){
+        var result = res.match(/<li>([^]*?)<\/li>/g).map(function(val){
           return val.replace(/<\/?li>/g,'');
         });
         this.templateLines = result;
@@ -443,10 +443,15 @@ function subscribeEvens(appLayout: any, sidebarConfig) {
   window.addEventListener('resize', function() {
     const width = document.body.clientWidth;
     appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
+    const header = root.querySelector('ch-header');
     if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile) {
-      root.querySelector('ch-header').style.display = 'flex';
+      if(header) {
+        header.style.display = 'flex';
+      }
     } else if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
-      root.querySelector('ch-header').style.display = 'none';
+      if(header) {
+        header.style.display = 'none';
+      }
     }
   }, true);
 }
@@ -493,7 +498,6 @@ async function buildSidebar() {
       }
       
       let appLayout = root.querySelector('ha-app-layout');
-      console.log(appLayout);
       let css = createCSS(sidebarConfig, document.body.clientWidth);
       let style: any = document.createElement('style');
       style.setAttribute('id', 'customSidebarStyle');
