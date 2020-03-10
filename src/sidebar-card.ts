@@ -438,37 +438,39 @@ function createCSS(sidebarConfig: any, width: number) {
   return css
 }
 
-function subscribeEvens(appLayout: any, sidebarConfig) {
+function update(appLayout, sidebarConfig) {
   let root: any = getRoot();
-  window.addEventListener('resize', function() {
-    const width = document.body.clientWidth;
-    appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
-    const header = root.querySelector('ch-header');
-    if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile) {
-      if(header) {
-        header.style.display = 'flex';
-      }
-    } else if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
-      if(header) {
-        header.style.display = 'none';
-      }
+  const width = document.body.clientWidth;
+  appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
+  const header = root.querySelector('ch-header');
+  if(header) {
+    console.log('Header found!');
+  } else {
+    console.log('Header not found!')
+  }
+  if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile) {
+    console.log('Action: Show header!');
+    if(header) {
+      header.style.display = 'flex';
     }
+  } else if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
+    console.log('Action: Hide header!')
+    if(header) {
+      header.style.display = 'none';
+    }
+  }
+}
+
+function subscribeEvens(appLayout: any, sidebarConfig) {
+  window.addEventListener('resize', function() {
+    update(appLayout, sidebarConfig);
   }, true);
 }
 
 async function buildCard(sidebar, config) {
-  // config.type = 'custom:sidebar-card';
-  // const sidebarCard = createCard(config);
-  // sidebarCard.hass = hass();
-  // sidebar.appendChild(sidebarCard);
-  // return new Promise((resolve) =>
-  //   sidebarCard.updateComplete ? sidebarCard.updateComplete.then(() => resolve(sidebarCard)): resolve(sidebarCard)
-  // );
   const sidebarCard = document.createElement("sidebar-card") as SidebarCard;
   sidebarCard.setConfig(config);
   sidebarCard.hass = hass();
-  // sidebarCard.hass = hass()!;
-  // sidebarCard.config = config!;
 
   sidebar.appendChild(sidebarCard);
 }
@@ -522,6 +524,7 @@ async function buildSidebar() {
       wrapper.appendChild(sidebar);
       wrapper.appendChild(contentContainer);
       await buildCard(sidebar, sidebarConfig);
+      update(appLayout, sidebarConfig);
       subscribeEvens(appLayout, sidebarConfig);
     } else {
       console.log('Error sidebar in width config!');
