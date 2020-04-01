@@ -540,6 +540,25 @@ function getRoot() {
 function update(appLayout, sidebarConfig) {
   const width = document.body.clientWidth;
   appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
+
+  let root = getRoot();
+  const header = root.shadowRoot.querySelector('ch-header');
+  if(header) {
+    console.log('Header found!');
+  } else {
+    console.log('Header not found!')
+  }
+  if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile) {
+    console.log('Action: Show header!');
+    if(header) {
+      header.style.display = 'flex';
+    }
+  } else if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
+    console.log('Action: Hide header!')
+    if(header) {
+      header.style.display = 'none';
+    }
+  }
 }
 
 function subscribeEvens(appLayout: any, sidebarConfig) {
@@ -561,6 +580,9 @@ async function buildSidebar() {
     const sidebarConfig = Object.assign({}, lovelace.config.sidebar);
     if(!sidebarConfig.width || (sidebarConfig.width && typeof sidebarConfig.width == 'number' && sidebarConfig.width > 0 && sidebarConfig.width < 100 ) || (sidebarConfig.width && typeof sidebarConfig.width == 'object')) {
       let root = getRoot();
+      if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
+        root.shadowRoot.querySelector('ch-header').style.display = 'none';
+      }
       if(!sidebarConfig.breakpoints) {
         sidebarConfig.breakpoints = {
           'tablet': 1024,
