@@ -50,6 +50,8 @@ Under sidebar you can configur the following options
 | `clock` | boolean | optional | `true` | Show analog clock in sidebar |
 | `digitalClock` | boolean | optional | `true` | Show digital clock in sidebar |
 | `digitalClockWithSeconds` | boolean | optional | `true` | If digitalClock is enabled you can also enable to show seconds |
+| `date` | boolean | optional | `false` | If date is enabled it will display the current date |
+| `dateFormat` | boolean | string | `DD MMMM` | If date is enabled you define how it should show the date with dateFormat, to see the options check this url: https://momentjs.com/docs/#/parsing/string-format/ |
 | `width` | object | optional | see info below | The width of the sidebar in percentages for different screens |
 | `hideTopMenu` | boolean | optional | `true` | Hide the top home assistant menu |
 | `showTopMenuOnMobile` | boolean | optional | `true` | If you hide the top menu you can set this to `true` so that it will be shown on mobile |
@@ -57,6 +59,7 @@ Under sidebar you can configur the following options
 | `sidebarMenu` | object | optional | see info below | Create a menu that can switch to different pages but also call any service you want |
 | `template` | template | optional | see info below | Template rules that will show messages to inform you for example with how many lights are on |
 | `style` | css | optional | see info below | Overwrite some color variables or write your own styles |
+| `bottomCard` | object | optional | see info below | Define any card that will be rendered at the bottom of the sidebar |
 
 ##### Width
 
@@ -184,6 +187,35 @@ sidebar:
         --clock-middle-border: #000;
     }
 
+```
+
+##### Bottom custom card
+
+To start add `bottomCard` to your sidebar config.
+`bottomCard` got 3 parts.
+
+1. The card `type` this can be default home assistant card or any custom card.
+2. `cardOptions` most cards need some configuration for example an entity this should be placed under `cardOptions`.
+3. `cardStyle` to make sure the card fits your sidebar style you can add extra CSS rules for the card to make it fit better. This is optional!
+
+Example:
+
+```
+sidebar:
+  bottomCard:
+    type: horizontal-stack
+    cardOptions:
+      cards:
+        - type: "custom:button-card"
+          color_type: card
+          color: rgb(255, 255, 255)
+          icon: mdi:home
+        - type: "custom:button-card"
+          color_type: card
+          color: rgb(255, 255, 255)
+          icon: mdi:lightbulb
+    cardStyle: |
+      background-color:#FFF;
 ```
 
 ### Screenshots

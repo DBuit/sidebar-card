@@ -3,12 +3,12 @@ import { moreInfo } from "card-tools/src/more-info";
 // import { createCard } from "card-tools/src/lovelace-element";
 import { hass, provideHass } from "card-tools/src/hass";
 import {subscribeRenderTemplate} from "card-tools/src/templates";
+import moment from 'moment/min/moment-with-locales';
 import {
   toggleEntity,
   navigate,
   forwardHaptic,
-  getLovelace,
-  getRoot
+  getLovelace
 } from 'custom-card-helpers';
 
 class SidebarCard extends LitElement {
@@ -20,6 +20,9 @@ class SidebarCard extends LitElement {
   clock = false;
   digitalClock = false;
   digitalClockWithSeconds = false;
+  date = false;
+  dateFormat = "DD MMMM";
+  bottomCard: any = null;
 
   static get properties() {
     return {
@@ -39,6 +42,10 @@ class SidebarCard extends LitElement {
     this.clock = this.config.clock ? this.config.clock : false;
     this.digitalClock = this.config.digitalClock ? this.config.digitalClock : false;
     this.digitalClockWithSeconds = this.config.digitalClockWithSeconds ? this.config.digitalClockWithSeconds : false;
+    this.date = this.config.date ? this.config.date : false;
+    this.dateFormat = this.config.dateFormat ? this.config.dateFormat : "DD MMMM";
+    this.bottomCard = this.config.bottomCard ? this.config.bottomCard : null;
+    console.log(this.bottomCard);
     const addStyle = "style" in this.config ? true : false;
     return html`
       ${addStyle ? html`
@@ -59,6 +66,9 @@ class SidebarCard extends LitElement {
           </div>
         ` : html``}
         ${title ? html`<h1>${title}</h1>`: html``}
+        ${this.date ? html`
+          <h2 class="date"></h2>
+        ` : html`` }
         
         ${sidebarMenu && sidebarMenu.length > 0 ? html`
         <ul class="sidebarMenu">
@@ -78,6 +88,13 @@ class SidebarCard extends LitElement {
             })}
           </ul>
         ` : html``}
+
+        ${this.bottomCard ? html`
+          <div class="bottom">
+            <card-maker nohass data-card="${this.bottomCard.type}" data-options="${JSON.stringify(this.bottomCard.cardOptions)}" data-style="${this.bottomCard.cardStyle ? this.bottomCard.cardStyle : ''}">
+            </card-maker>
+          </div>
+        ` : html`` }
         
       </div>
     `;
@@ -113,22 +130,73 @@ class SidebarCard extends LitElement {
       this.shadowRoot.querySelector('.digitalClock').textContent = digitalTime;
     }
   }
+  _runDate() {
+    const now = moment();
+    now.locale(this.hass.language);
+    const date = now.format(this.dateFormat);
+    this.shadowRoot.querySelector('.date').textContent = date;
+  }
 
   firstUpdated() {
     provideHass(this);
-    getRoot().querySelectorAll("paper-tab").forEach(paperTab => {
+    let root = getRoot();
+    root.querySelectorAll("paper-tab").forEach(paperTab => {
       paperTab.addEventListener('click', () => {
         this._updateActiveMenu();
       })
     });
+    const self = this;
     if(this.clock || this.digitalClock) {
       const inc = 1000;
-      const self = this;
       self._runClock();
       setInterval(function () {
         self._runClock();
       }, inc);
     }
+    if(this.date) {
+      const inc = 1000 * 60 * 60;
+      self._runDate();
+      setInterval(function () {
+        self._runDate();
+      }, inc);
+    }
+    console.log(this.shadowRoot);
+    console.log(this);
+    console.log(this.offsetWidth);
+    const sidebarInner = this.shadowRoot.querySelector('.sidebar-inner');
+    console.log(sidebarInner);
+    if(sidebarInner) {
+      sidebarInner.style.width = this.offsetWidth + 'px';
+    }
+    this.shadowRoot.querySelectorAll("card-maker").forEach(customCard => {
+      var card = {
+        type: customCard.dataset.card
+      };
+      card = Object.assign({}, card, JSON.parse(customCard.dataset.options));
+      customCard.config = card;
+
+      let style = "";
+      if(customCard.dataset.style) {
+        style = customCard.dataset.style;
+      }
+
+      if(style != "") {
+        let itterations = 0;
+        let interval = setInterval(function () {
+          let el = customCard.children[0];
+          if(el) {
+            window.clearInterval(interval);
+
+            var styleElement = document.createElement('style');
+            styleElement.innerHTML = style;
+            el.shadowRoot.appendChild(styleElement);
+
+          } else if (++itterations === 10 ) {
+            window.clearInterval(interval);
+          }
+        }, 100);
+      }
+    });
   }
 
   _updateActiveMenu() {
@@ -224,6 +292,12 @@ class SidebarCard extends LitElement {
         }
         .sidebar-inner {
           padding: 20px;
+          display: flex;
+          flex-direction: column;
+          height: calc(100vh - 50px);
+          box-sizing: border-box;
+          position:fixed;
+          width:0;
         }
         .sidebarMenu {
           list-style:none;
@@ -271,6 +345,13 @@ class SidebarCard extends LitElement {
         }
         h1.digitalClock.with-title {
           margin-bottom:0;
+        }
+        h2 {
+          margin:0;
+          font-size: 26px;
+          line-height: 26px;
+          font-weight: 200;
+          color: var(--sidebar-text-color, #000);
         }
         .template {
           margin: 0;
@@ -368,6 +449,11 @@ class SidebarCard extends LitElement {
           margin: auto;
           z-index: 1;
         }
+
+        .bottom {
+          display:flex;
+          margin-top:auto;
+        }
     `;
   }  
   
@@ -438,27 +524,22 @@ function createCSS(sidebarConfig: any, width: number) {
   return css
 }
 
+function getRoot() {
+    let root: any = document.querySelector('home-assistant');
+    root = root && root.shadowRoot;
+    root = root && root.querySelector('home-assistant-main');
+    root = root && root.shadowRoot;
+    root = root && root.querySelector('app-drawer-layout partial-panel-resolver');
+    root = root && root.shadowRoot || root;
+    root = root && root.querySelector('ha-panel-lovelace');
+    root = root && root.shadowRoot;
+    root = root && root.querySelector('hui-root');
+    return root;
+}
+
 function update(appLayout, sidebarConfig) {
-  let root: any = getRoot();
   const width = document.body.clientWidth;
   appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
-  const header = root.querySelector('ch-header');
-  if(header) {
-    console.log('Header found!');
-  } else {
-    console.log('Header not found!')
-  }
-  if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile) {
-    console.log('Action: Show header!');
-    if(header) {
-      header.style.display = 'flex';
-    }
-  } else if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
-    console.log('Action: Hide header!')
-    if(header) {
-      header.style.display = 'none';
-    }
-  }
 }
 
 function subscribeEvens(appLayout: any, sidebarConfig) {
@@ -479,12 +560,7 @@ async function buildSidebar() {
   if(lovelace.config.sidebar) {
     const sidebarConfig = Object.assign({}, lovelace.config.sidebar);
     if(!sidebarConfig.width || (sidebarConfig.width && typeof sidebarConfig.width == 'number' && sidebarConfig.width > 0 && sidebarConfig.width < 100 ) || (sidebarConfig.width && typeof sidebarConfig.width == 'object')) {
-      let root: any = getRoot();
-      
-      if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
-        root.querySelector('ch-header').style.display = 'none';
-      }
-
+      let root = getRoot();
       if(!sidebarConfig.breakpoints) {
         sidebarConfig.breakpoints = {
           'tablet': 1024,
@@ -499,7 +575,7 @@ async function buildSidebar() {
         }
       }
       
-      let appLayout = root.querySelector('ha-app-layout');
+      let appLayout = root.shadowRoot.querySelector('ha-app-layout');
       let css = createCSS(sidebarConfig, document.body.clientWidth);
       let style: any = document.createElement('style');
       style.setAttribute('id', 'customSidebarStyle');
