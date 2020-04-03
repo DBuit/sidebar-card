@@ -45,7 +45,6 @@ class SidebarCard extends LitElement {
     this.date = this.config.date ? this.config.date : false;
     this.dateFormat = this.config.dateFormat ? this.config.dateFormat : "DD MMMM";
     this.bottomCard = this.config.bottomCard ? this.config.bottomCard : null;
-    console.log(this.bottomCard);
     const addStyle = "style" in this.config ? true : false;
     return html`
       ${addStyle ? html`
@@ -137,6 +136,24 @@ class SidebarCard extends LitElement {
     this.shadowRoot.querySelector('.date').textContent = date;
   }
 
+  updateSidebarSize(root) {
+    const sidebarInner = this.shadowRoot.querySelector('.sidebar-inner');
+    const header = root.shadowRoot.querySelector('ch-header');
+    const _1vh = window.innerHeight / 100;
+    if(sidebarInner) {
+      sidebarInner.style.width = this.offsetWidth + 'px';
+      let headerHeight = 50;
+      if(header) {
+        if(header.offsetParent === null) {
+          headerHeight = 0;
+        } else {
+          headerHeight = header.offsetHeight;
+        }
+      }
+      sidebarInner.style.height = (100 * _1vh) - header.offsetHeight + 'px';
+    }
+  }
+
   firstUpdated() {
     provideHass(this);
     let root = getRoot();
@@ -160,14 +177,13 @@ class SidebarCard extends LitElement {
         self._runDate();
       }, inc);
     }
-    console.log(this.shadowRoot);
-    console.log(this);
-    console.log(this.offsetWidth);
-    const sidebarInner = this.shadowRoot.querySelector('.sidebar-inner');
-    console.log(sidebarInner);
-    if(sidebarInner) {
-      sidebarInner.style.width = this.offsetWidth + 'px';
-    }
+
+    self.updateSidebarSize(root);
+    window.addEventListener('resize', function() {
+      self.updateSidebarSize(root);
+    }, true);
+
+    
     this.shadowRoot.querySelectorAll("card-maker").forEach(customCard => {
       var card = {
         type: customCard.dataset.card
@@ -294,7 +310,6 @@ class SidebarCard extends LitElement {
           padding: 20px;
           display: flex;
           flex-direction: column;
-          height: calc(100vh - 50px);
           box-sizing: border-box;
           position:fixed;
           width:0;
