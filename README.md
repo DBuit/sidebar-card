@@ -13,7 +13,7 @@ Go to the hacs store and use the repo url `https://github.com/DBuit/sidebar-card
 Add the following to your ui-lovelace.yaml:
 ```yaml
 resources:
-  url: /community_plugin/sidebar-card/sidebar-card.js
+  url: /hacsfiles/sidebar-card/sidebar-card.js
   type: module
 ```
 

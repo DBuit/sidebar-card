@@ -90,7 +90,7 @@ class SidebarCard extends LitElement {
 
         ${this.bottomCard ? html`
           <div class="bottom">
-            <card-maker nohass data-card="${this.bottomCard.type}" data-options="${JSON.stringify(this.bottomCard.cardOptions)}" data-style="${this.bottomCard.cardStyle ? this.bottomCard.cardStyle : ''}">
+            <card-maker .nohass="false" data-card="${this.bottomCard.type}" data-options="${JSON.stringify(this.bottomCard.cardOptions)}" data-style="${this.bottomCard.cardStyle ? this.bottomCard.cardStyle : ''}">
             </card-maker>
           </div>
         ` : html`` }
@@ -150,14 +150,16 @@ class SidebarCard extends LitElement {
           headerHeight = header.offsetHeight;
         }
       }
-      sidebarInner.style.height = (100 * _1vh) - header.offsetHeight + 'px';
+      console.log('headerHeight', headerHeight);
+      sidebarInner.style.height = (100 * _1vh) - headerHeight + 'px';
     }
   }
 
   firstUpdated() {
     provideHass(this);
     let root = getRoot();
-    root.querySelectorAll("paper-tab").forEach(paperTab => {
+    root.shadowRoot.querySelectorAll("paper-tab").forEach(paperTab => {
+      console.log('Menu item found');
       paperTab.addEventListener('click', () => {
         this._updateActiveMenu();
       })
@@ -178,42 +180,50 @@ class SidebarCard extends LitElement {
       }, inc);
     }
 
-    self.updateSidebarSize(root);
+    setTimeout(() => {
+      self.updateSidebarSize(root);
+      self._updateActiveMenu();
+    }, 1000);
     window.addEventListener('resize', function() {
       self.updateSidebarSize(root);
     }, true);
 
     
-    this.shadowRoot.querySelectorAll("card-maker").forEach(customCard => {
-      var card = {
-        type: customCard.dataset.card
-      };
-      card = Object.assign({}, card, JSON.parse(customCard.dataset.options));
-      customCard.config = card;
-
-      let style = "";
-      if(customCard.dataset.style) {
-        style = customCard.dataset.style;
-      }
-
-      if(style != "") {
-        let itterations = 0;
-        let interval = setInterval(function () {
-          let el = customCard.children[0];
-          if(el) {
-            window.clearInterval(interval);
-
-            var styleElement = document.createElement('style');
-            styleElement.innerHTML = style;
-            el.shadowRoot.appendChild(styleElement);
-
-          } else if (++itterations === 10 ) {
-            window.clearInterval(interval);
-          }
-        }, 100);
-      }
-    });
+    setTimeout(() => {
+      this.shadowRoot.querySelectorAll("card-maker").forEach(customCard => {
+        var card = {
+          type: customCard.dataset.card
+        };
+        card = Object.assign({}, card, JSON.parse(customCard.dataset.options));
+        customCard.config = card;
+  
+        let style = "";
+        if(customCard.dataset.style) {
+          style = customCard.dataset.style;
+        }
+  
+        if(style != "") {
+          let itterations = 0;
+          let interval = setInterval(function () {
+            let el = customCard.children[0];
+            if(el) {
+              window.clearInterval(interval);
+  
+              var styleElement = document.createElement('style');
+              styleElement.innerHTML = style;
+              el.shadowRoot.appendChild(styleElement);
+  
+            } else if (++itterations === 10 ) {
+              window.clearInterval(interval);
+            }
+          }, 100);
+        }
+      });
+    }, 2000);
+    
   }
+
+  
 
   _updateActiveMenu() {
     this.shadowRoot.querySelectorAll('ul.sidebarMenu li[data-type="navigate"]').forEach(menuItem => {
@@ -495,6 +505,7 @@ function createCSS(sidebarConfig: any, width: number) {
     #customSidebarWrapper { 
       display:flex;
       flex-direction:row;
+      overflow:hidden;
     }
   `;
   if(sidebarResponsive) {
@@ -502,6 +513,7 @@ function createCSS(sidebarConfig: any, width: number) {
       css += `
       #customSidebar {
         width:`+sidebarConfig.width.mobile+`%;
+        overflow:hidden;
       } 
       #contentContainer {
         width:`+(100 - sidebarConfig.width.mobile)+`%;
@@ -511,6 +523,7 @@ function createCSS(sidebarConfig: any, width: number) {
         css += `
         #customSidebar {
           width:`+sidebarConfig.width.tablet+`%;
+          overflow:hidden;
         } 
         #contentContainer {
           width:`+(100 - sidebarConfig.width.tablet)+`%;
@@ -520,6 +533,7 @@ function createCSS(sidebarConfig: any, width: number) {
         css += `
         #customSidebar {
           width:`+sidebarConfig.width.desktop+`%;
+          overflow:hidden;
         } 
         #contentContainer {
           width:`+(100 - sidebarConfig.width.desktop)+`%;
@@ -530,6 +544,7 @@ function createCSS(sidebarConfig: any, width: number) {
     css += `
       #customSidebar {
         width:`+sidebarWidth+`%;
+        overflow:hidden;
       } 
       #contentContainer {
         width:`+contentWidth+`%;
@@ -589,8 +604,25 @@ async function buildCard(sidebar, config) {
 
   sidebar.appendChild(sidebarCard);
 }
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function getConfig() {
+  let lovelace: any;
+  while(!lovelace) {
+    lovelace = getLovelace();
+    if(!lovelace) {
+      await sleep(500);
+    }
+  }
+
+  return lovelace;
+}
+
 async function buildSidebar() {
-  let lovelace = getLovelace();
+  let lovelace = await getConfig();
   if(lovelace.config.sidebar) {
     const sidebarConfig = Object.assign({}, lovelace.config.sidebar);
     if(!sidebarConfig.width || (sidebarConfig.width && typeof sidebarConfig.width == 'number' && sidebarConfig.width > 0 && sidebarConfig.width < 100 ) || (sidebarConfig.width && typeof sidebarConfig.width == 'object')) {
