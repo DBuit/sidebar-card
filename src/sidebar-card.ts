@@ -107,7 +107,7 @@ class SidebarCard extends LitElement {
     const minutes = date.getMinutes();
     const seconds = date.getSeconds();
     
-    const hour = hours * 30;
+    const hour = Math.floor((hours * 60 + minutes) / 2);
     const minute = minutes * 6;
     const second = seconds * 6;
     
