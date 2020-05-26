@@ -23,6 +23,7 @@ class SidebarCard extends LitElement {
   date = false;
   dateFormat = "DD MMMM";
   bottomCard: any = null;
+  CUSTOM_TYPE_PREFIX = "custom:";
 
   static get properties() {
     return {
@@ -90,8 +91,6 @@ class SidebarCard extends LitElement {
 
         ${this.bottomCard ? html`
           <div class="bottom">
-            <card-maker .nohass="false" data-card="${this.bottomCard.type}" data-options="${JSON.stringify(this.bottomCard.cardOptions)}" data-style="${this.bottomCard.cardStyle ? this.bottomCard.cardStyle : ''}">
-            </card-maker>
           </div>
         ` : html`` }
         
@@ -188,42 +187,31 @@ class SidebarCard extends LitElement {
       self.updateSidebarSize(root);
     }, true);
 
-    
     setTimeout(() => {
-      this.shadowRoot.querySelectorAll("card-maker").forEach(customCard => {
-        var card = {
-          type: customCard.dataset.card
-        };
-        card = Object.assign({}, card, JSON.parse(customCard.dataset.options));
-        customCard.config = card;
-  
-        let style = "";
-        if(customCard.dataset.style) {
-          style = customCard.dataset.style;
-        }
-  
-        if(style != "") {
-          let itterations = 0;
-          let interval = setInterval(function () {
-            let el = customCard.children[0];
-            if(el) {
-              window.clearInterval(interval);
-  
-              var styleElement = document.createElement('style');
-              styleElement.innerHTML = style;
-              el.shadowRoot.appendChild(styleElement);
-  
-            } else if (++itterations === 10 ) {
-              window.clearInterval(interval);
-            }
-          }, 100);
-        }
-      });
+      var card = {
+        type: this.bottomCard.type
+      };
+      card = Object.assign({}, card, this.bottomCard.cardOptions);
+      console.log(card);
+      if(!card || typeof card !== "object" || !card.type) {
+        console.log('Bottom card config error!')
+      } else {
+        let tag = card.type;
+        if(tag.startsWith(this.CUSTOM_TYPE_PREFIX))
+          tag = tag.substr(this.CUSTOM_TYPE_PREFIX.length);
+        else
+          tag = `hui-${tag}-card`;
+
+        const cardElement = document.createElement(tag);
+        cardElement.setConfig(card);
+        cardElement.hass = hass();
+
+        var bottomSection = this.shadowRoot.querySelector('.bottom');
+        bottomSection.appendChild(cardElement);
+      }
     }, 2000);
     
   }
-
-  
 
   _updateActiveMenu() {
     this.shadowRoot.querySelectorAll('ul.sidebarMenu li[data-type="navigate"]').forEach(menuItem => {
