@@ -17532,6 +17532,7 @@ class SidebarCard extends LitElement {
         if (e.target.dataset && e.target.dataset.menuitem) {
             const menuItem = JSON.parse(e.target.dataset.menuitem);
             this._customAction(menuItem);
+            this._updateActiveMenu();
         }
     }
     _customAction(tapAction) {
