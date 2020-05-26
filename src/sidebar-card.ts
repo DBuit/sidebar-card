@@ -208,6 +208,7 @@ class SidebarCard extends LitElement {
 
         var bottomSection = this.shadowRoot.querySelector('.bottom');
         bottomSection.appendChild(cardElement);
+        provideHass(cardElement);
       }
     }, 2000);
     
