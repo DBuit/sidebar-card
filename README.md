@@ -215,7 +215,10 @@ sidebar:
           color: rgb(255, 255, 255)
           icon: mdi:lightbulb
     cardStyle: |
-      background-color:#FFF;
+      :host {
+        width: 100%;
+        background-color:#FFF;
+      }
 ```
 
 ### Screenshots

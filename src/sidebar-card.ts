@@ -209,6 +209,21 @@ class SidebarCard extends LitElement {
         var bottomSection = this.shadowRoot.querySelector('.bottom');
         bottomSection.appendChild(cardElement);
         provideHass(cardElement);
+
+        if(this.bottomCard.cardStyle && this.bottomCard.cardStyle != "") {
+          let style = this.bottomCard.cardStyle;
+          let itterations = 0;
+          let interval = setInterval(function() {
+            if(cardElement && cardElement.shadowRoot) {
+              window.clearInterval(interval);
+              var styleElement = document.createElement('style');
+              styleElement.innerHTML = style;
+              cardElement.shadowRoot.appendChild(styleElement);
+            } else if(++itterations === 10) {
+              window.clearInterval(interval);
+            }
+          }, 100);
+        }
       }
     }, 2000);
     
