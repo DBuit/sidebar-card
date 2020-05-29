@@ -515,35 +515,75 @@ function createCSS(sidebarConfig: any, width: number) {
   `;
   if(sidebarResponsive) {
     if(width <= sidebarConfig.breakpoints.mobile) {
-      css += `
-      #customSidebar {
-        width:`+sidebarConfig.width.mobile+`%;
-        overflow:hidden;
-      } 
-      #contentContainer {
-        width:`+(100 - sidebarConfig.width.mobile)+`%;
+      if(sidebarConfig.width.mobile == 0) {
+        css += `
+          #customSidebar {
+            width:`+sidebarConfig.width.mobile+`%;
+            overflow:hidden;
+            display:none;
+          } 
+          #contentContainer {
+            width:`+(100 - sidebarConfig.width.mobile)+`%;
+          }
+        `;
+      } else {
+        css += `
+          #customSidebar {
+            width:`+sidebarConfig.width.mobile+`%;
+            overflow:hidden;
+          } 
+          #contentContainer {
+            width:`+(100 - sidebarConfig.width.mobile)+`%;
+          }
+        `;
       }
-    `;
+      
     } else if (width <= sidebarConfig.breakpoints.tablet) {
+      if(sidebarConfig.width.tablet == 0) {
         css += `
-        #customSidebar {
-          width:`+sidebarConfig.width.tablet+`%;
-          overflow:hidden;
-        } 
-        #contentContainer {
-          width:`+(100 - sidebarConfig.width.tablet)+`%;
-        }
-      `;
+          #customSidebar {
+            width:`+sidebarConfig.width.tablet+`%;
+            overflow:hidden;
+            display:none;
+          } 
+          #contentContainer {
+            width:`+(100 - sidebarConfig.width.tablet)+`%;
+          }
+        `;
+      } else {
+        css += `
+          #customSidebar {
+            width:`+sidebarConfig.width.tablet+`%;
+            overflow:hidden;
+          } 
+          #contentContainer {
+            width:`+(100 - sidebarConfig.width.tablet)+`%;
+          }
+        `;
+      }
     } else {
+      if(sidebarConfig.width.tablet == 0) {
         css += `
-        #customSidebar {
-          width:`+sidebarConfig.width.desktop+`%;
-          overflow:hidden;
-        } 
-        #contentContainer {
-          width:`+(100 - sidebarConfig.width.desktop)+`%;
-        }
-      `;
+          #customSidebar {
+            width:`+sidebarConfig.width.desktop+`%;
+            overflow:hidden;
+            display:none;
+          } 
+          #contentContainer {
+            width:`+(100 - sidebarConfig.width.desktop)+`%;
+          }
+        `;
+      } else {
+        css += `
+          #customSidebar {
+            width:`+sidebarConfig.width.desktop+`%;
+            overflow:hidden;
+          } 
+          #contentContainer {
+            width:`+(100 - sidebarConfig.width.desktop)+`%;
+          }
+        `;
+      }
     }
   } else {
     css += `
