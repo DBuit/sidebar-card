@@ -17315,6 +17315,7 @@ class SidebarCard extends LitElement {
         this.templateLines = [];
         this.clock = false;
         this.digitalClock = false;
+        this.twelveHourVersion = false;
         this.digitalClockWithSeconds = false;
         this.date = false;
         this.dateFormat = "DD MMMM";
@@ -17334,6 +17335,7 @@ class SidebarCard extends LitElement {
         this.clock = this.config.clock ? this.config.clock : false;
         this.digitalClock = this.config.digitalClock ? this.config.digitalClock : false;
         this.digitalClockWithSeconds = this.config.digitalClockWithSeconds ? this.config.digitalClockWithSeconds : false;
+        this.twelveHourVersion = this.config.twelveHourVersion ? this.config.twelveHourVersion : false;
         this.date = this.config.date ? this.config.date : false;
         this.dateFormat = this.config.dateFormat ? this.config.dateFormat : "DD MMMM";
         this.bottomCard = this.config.bottomCard ? this.config.bottomCard : null;
@@ -17390,7 +17392,7 @@ class SidebarCard extends LitElement {
     }
     _runClock() {
         const date = new Date();
-        const fullhours = date.getHours().toString();
+        var fullhours = date.getHours().toString();
         const hours = ((date.getHours() + 11) % 12 + 1);
         const minutes = date.getMinutes();
         const seconds = date.getSeconds();
@@ -17402,7 +17404,7 @@ class SidebarCard extends LitElement {
             this.shadowRoot.querySelector('.minute').style.transform = `rotate(${minute}deg)`;
             this.shadowRoot.querySelector('.second').style.transform = `rotate(${second}deg)`;
         }
-        if (this.digitalClock) {
+        if (this.digitalClock && !this.twelveHourVersion) {
             const minutesString = minutes.toString();
             var digitalTime = fullhours.length < 2 ? '0' + fullhours + ':' : fullhours + ':';
             if (this.digitalClockWithSeconds) {
@@ -17413,6 +17415,25 @@ class SidebarCard extends LitElement {
             else {
                 digitalTime += minutesString.length < 2 ? '0' + minutesString : minutesString;
             }
+            this.shadowRoot.querySelector('.digitalClock').textContent = digitalTime;
+        }
+        else if (this.digitalClock && this.twelveHourVersion) {
+            var ampm = hours >= 12 ? 'pm' : 'am';
+            var hoursampm = date.getHours();
+            hoursampm = hoursampm % 12;
+            hoursampm = hoursampm ? hoursampm : 12;
+            fullhours = hoursampm.toString();
+            const minutesString = minutes.toString();
+            var digitalTime = fullhours.length < 2 ? '0' + fullhours + ':' : fullhours + ':';
+            if (this.digitalClockWithSeconds) {
+                digitalTime += minutesString.length < 2 ? '0' + minutesString + ':' : minutesString + ':';
+                const secondsString = seconds.toString();
+                digitalTime += secondsString.length < 2 ? '0' + secondsString : secondsString;
+            }
+            else {
+                digitalTime += minutesString.length < 2 ? '0' + minutesString : minutesString;
+            }
+            digitalTime += ' ' + ampm;
             this.shadowRoot.querySelector('.digitalClock').textContent = digitalTime;
         }
     }
