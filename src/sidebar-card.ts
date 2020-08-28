@@ -533,6 +533,13 @@ function createCSS(sidebarConfig: any, width: number) {
       flex-direction:row;
       overflow:hidden;
     }
+    #customSidebar.hide {
+      display:none!important;
+      width:0!important;
+    }
+    #contentContainer.hideSidebar {
+      width:100%!important;
+    }
   `;
   if(sidebarResponsive) {
     if(width <= sidebarConfig.breakpoints.mobile) {
@@ -657,10 +664,29 @@ function update(appLayout, sidebarConfig) {
   }
 }
 
-function subscribeEvens(appLayout: any, sidebarConfig) {
+function subscribeEvens(appLayout: any, sidebarConfig, contentContainer: any, sidebar: any) {
   window.addEventListener('resize', function() {
     update(appLayout, sidebarConfig);
   }, true);
+
+  if("hideOnPath" in sidebarConfig) {
+    window.addEventListener("location-changed", () => {
+      if(sidebarConfig.hideOnPath.includes(window.location.pathname)) {
+        console.log('Sidebar disable for this path');
+        contentContainer.classList.add('hideSidebar');
+        sidebar.classList.add('hide');
+      } else {
+        contentContainer.classList.remove('hideSidebar');
+        sidebar.classList.remove('hide');
+      }
+    });
+
+    if(sidebarConfig.hideOnPath.includes(window.location.pathname)) {
+      console.log('Sidebar disable for this path');
+      contentContainer.classList.add('hideSidebar');
+      sidebar.classList.add('hide');
+    }
+  }
 }
 
 async function buildCard(sidebar, config) {
@@ -736,7 +762,7 @@ async function buildSidebar() {
       wrapper.appendChild(contentContainer);
       await buildCard(sidebar, sidebarConfig);
       update(appLayout, sidebarConfig);
-      subscribeEvens(appLayout, sidebarConfig);
+      subscribeEvens(appLayout, sidebarConfig, contentContainer, sidebar);
     } else {
       console.log('Error sidebar in width config!');
     }

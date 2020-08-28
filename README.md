@@ -61,6 +61,7 @@ Under sidebar you can configur the following options
 | `template` | template | optional | see info below | Template rules that will show messages to inform you for example with how many lights are on |
 | `style` | css | optional | see info below | Overwrite some color variables or write your own styles |
 | `bottomCard` | object | optional | see info below | Define any card that will be rendered at the bottom of the sidebar |
+| `hideOnPath` | array | optional | - /lovelace/camera | If you don't want the sidebar on every path you can add a list of paths where it should hide the sidebar |
 
 ##### Width
 
