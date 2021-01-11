@@ -17662,6 +17662,7 @@ class SidebarCard extends LitElement {
         this.digitalClock = false;
         this.twelveHourVersion = false;
         this.digitalClockWithSeconds = false;
+        this.viewPeriod = false;
         this.date = false;
         this.dateFormat = "DD MMMM";
         this.bottomCard = null;
@@ -17681,6 +17682,7 @@ class SidebarCard extends LitElement {
         this.digitalClock = this.config.digitalClock ? this.config.digitalClock : false;
         this.digitalClockWithSeconds = this.config.digitalClockWithSeconds ? this.config.digitalClockWithSeconds : false;
         this.twelveHourVersion = this.config.twelveHourVersion ? this.config.twelveHourVersion : false;
+        this.viewPeriod = this.config.viewPeriod ? this.config.viewPeriod : false;
         this.date = this.config.date ? this.config.date : false;
         this.dateFormat = this.config.dateFormat ? this.config.dateFormat : "DD MMMM";
         this.bottomCard = this.config.bottomCard ? this.config.bottomCard : null;
@@ -17738,6 +17740,7 @@ class SidebarCard extends LitElement {
     _runClock() {
         const date = new Date();
         var fullhours = date.getHours().toString();
+        const realhours = date.getHours();
         const hours = ((date.getHours() + 11) % 12 + 1);
         const minutes = date.getMinutes();
         const seconds = date.getSeconds();
@@ -17762,8 +17765,26 @@ class SidebarCard extends LitElement {
             }
             this.shadowRoot.querySelector('.digitalClock').textContent = digitalTime;
         }
-        else if (this.digitalClock && this.twelveHourVersion) {
-            var ampm = hours >= 12 ? 'pm' : 'am';
+        else if (this.digitalClock && this.twelveHourVersion && !this.viewPeriod) {
+            var hoursampm = date.getHours();
+            hoursampm = hoursampm % 12;
+            hoursampm = hoursampm ? hoursampm : 12;
+            fullhours = hoursampm.toString();
+            const minutesString = minutes.toString();
+            var digitalTime = fullhours.length < 2 ? '0' + fullhours + ':' : fullhours + ':';
+            if (this.digitalClockWithSeconds) {
+                digitalTime += minutesString.length < 2 ? '0' + minutesString + ':' : minutesString + ':';
+                const secondsString = seconds.toString();
+                digitalTime += secondsString.length < 2 ? '0' + secondsString : secondsString;
+            }
+            else {
+                digitalTime += minutesString.length < 2 ? '0' + minutesString : minutesString;
+            }
+            digitalTime;
+            this.shadowRoot.querySelector('.digitalClock').textContent = digitalTime;
+        }
+        else if (this.digitalClock && this.twelveHourVersion && this.viewPeriod) {
+            var ampm = realhours >= 12 ? 'pm' : 'am';
             var hoursampm = date.getHours();
             hoursampm = hoursampm % 12;
             hoursampm = hoursampm ? hoursampm : 12;
