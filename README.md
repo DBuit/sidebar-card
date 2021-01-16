@@ -42,7 +42,7 @@ views:
 
 ### Main Options
 
-Under sidebar you can configur the following options
+Under sidebar you can configure the following options:
 
 | Name | Type | Default | Supported options | Description |
 | -------------- | ----------- | ------------ | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -51,6 +51,7 @@ Under sidebar you can configur the following options
 | `digitalClock` | boolean | optional | `true` | Show digital clock in sidebar |
 | `digitalClockWithSeconds` | boolean | optional | `true` | If digitalClock is enabled you can also enable to show seconds |
 | `twelveHourVersion` | boolean | optional | `false` | If digitalClock is enabled you can also enable this to 12 hour version |
+| `period` | boolean | optional | `false` | If twelveHourVersion is enabled you can enable this to show 'AM' or 'PM' |
 | `date` | boolean | optional | `false` | If date is enabled it will display the current date |
 | `dateFormat` | boolean | string | `DD MMMM` | If date is enabled you define how it should show the date with dateFormat, to see the options check this url: https://momentjs.com/docs/#/parsing/string-format/ |
 | `width` | object | optional | see info below | The width of the sidebar in percentages for different screens |
