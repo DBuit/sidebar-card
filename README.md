@@ -56,6 +56,7 @@ Under sidebar you can configure the following options:
 | `dateFormat` | boolean | string | `DD MMMM` | If date is enabled you define how it should show the date with dateFormat, to see the options check this url: https://momentjs.com/docs/#/parsing/string-format/ |
 | `width` | object | optional | see info below | The width of the sidebar in percentages for different screens |
 | `hideTopMenu` | boolean | optional | `true` | Hide the top home assistant menu |
+| `hideHassSidebar` | boolean | optional | `true` | Hide the home assistant sidebar |
 | `showTopMenuOnMobile` | boolean | optional | `true` | If you hide the top menu you can set this to `true` so that it will be shown on mobile |
 | `breakpoints` | object | optional | see info below | For the width we set different sizes for different screens with breakpoints you can overwrite these breakpoints |
 | `sidebarMenu` | object | optional | see info below | Create a menu that can switch to different pages but also call any service you want |
@@ -63,6 +64,10 @@ Under sidebar you can configure the following options:
 | `style` | css | optional | see info below | Overwrite some color variables or write your own styles |
 | `bottomCard` | object | optional | see info below | Define any card that will be rendered at the bottom of the sidebar |
 | `hideOnPath` | array | optional | - /lovelace/camera | If you don't want the sidebar on every path you can add a list of paths where it should hide the sidebar |
+
+
+When using hideTopMenu and/or hideHassSidebar you can disable this by adding `?sidebarOff` to the url.
+For example you get this url: https://myhomeassistant.duckdns.org/lovelace/home?sidebarOff
 
 ##### Width
 

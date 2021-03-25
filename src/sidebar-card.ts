@@ -179,13 +179,9 @@ class SidebarCard extends LitElement {
     const _1vh = window.innerHeight / 100;
     if(sidebarInner) {
       sidebarInner.style.width = this.offsetWidth + 'px';
-      let headerHeight = 50;
-      if(header) {
-        if(header.offsetParent === null) {
-          headerHeight = 0;
-        } else {
-          headerHeight = header.offsetHeight;
-        }
+      let headerHeight = 96;
+      if(this.config.hideTopMenu) {
+        headerHeight = 0;
       }
       console.log('headerHeight', headerHeight);
       sidebarInner.style.height = (100 * _1vh) - headerHeight + 'px';
@@ -225,46 +221,47 @@ class SidebarCard extends LitElement {
       self.updateSidebarSize(root);
     }, true);
 
-    setTimeout(() => {
-      var card = {
-        type: this.bottomCard.type
-      };
-      card = Object.assign({}, card, this.bottomCard.cardOptions);
-      console.log(card);
-      if(!card || typeof card !== "object" || !card.type) {
-        console.log('Bottom card config error!')
-      } else {
-        let tag = card.type;
-        if(tag.startsWith(this.CUSTOM_TYPE_PREFIX))
-          tag = tag.substr(this.CUSTOM_TYPE_PREFIX.length);
-        else
-          tag = `hui-${tag}-card`;
+    if(this.bottomCard) {
+      setTimeout(() => {
+        var card = {
+          type: this.bottomCard.type
+        };
+        card = Object.assign({}, card, this.bottomCard.cardOptions);
+        console.log(card);
+        if(!card || typeof card !== "object" || !card.type) {
+          console.log('Bottom card config error!')
+        } else {
+          let tag = card.type;
+          if(tag.startsWith(this.CUSTOM_TYPE_PREFIX))
+            tag = tag.substr(this.CUSTOM_TYPE_PREFIX.length);
+          else
+            tag = `hui-${tag}-card`;
 
-        const cardElement = document.createElement(tag);
-        cardElement.setConfig(card);
-        cardElement.hass = hass();
+          const cardElement = document.createElement(tag);
+          cardElement.setConfig(card);
+          cardElement.hass = hass();
 
-        var bottomSection = this.shadowRoot.querySelector('.bottom');
-        bottomSection.appendChild(cardElement);
-        provideHass(cardElement);
+          var bottomSection = this.shadowRoot.querySelector('.bottom');
+          bottomSection.appendChild(cardElement);
+          provideHass(cardElement);
 
-        if(this.bottomCard.cardStyle && this.bottomCard.cardStyle != "") {
-          let style = this.bottomCard.cardStyle;
-          let itterations = 0;
-          let interval = setInterval(function() {
-            if(cardElement && cardElement.shadowRoot) {
-              window.clearInterval(interval);
-              var styleElement = document.createElement('style');
-              styleElement.innerHTML = style;
-              cardElement.shadowRoot.appendChild(styleElement);
-            } else if(++itterations === 10) {
-              window.clearInterval(interval);
-            }
-          }, 100);
+          if(this.bottomCard.cardStyle && this.bottomCard.cardStyle != "") {
+            let style = this.bottomCard.cardStyle;
+            let itterations = 0;
+            let interval = setInterval(function() {
+              if(cardElement && cardElement.shadowRoot) {
+                window.clearInterval(interval);
+                var styleElement = document.createElement('style');
+                styleElement.innerHTML = style;
+                cardElement.shadowRoot.appendChild(styleElement);
+              } else if(++itterations === 10) {
+                window.clearInterval(interval);
+              }
+            }, 100);
+          }
         }
-      }
-    }, 2000);
-    
+      }, 2000);
+    }
   }
 
   _updateActiveMenu() {
@@ -656,29 +653,84 @@ function getRoot() {
     root = root && root.querySelector('hui-root');
     return root;
 }
+function getSidebar() {
+    let sidebar: any = document.querySelector('home-assistant');
+    sidebar = sidebar && sidebar.shadowRoot;
+    sidebar = sidebar && sidebar.querySelector('home-assistant-main');
+    sidebar = sidebar && sidebar.shadowRoot;
+    sidebar = sidebar && sidebar.querySelector('app-drawer-layout app-drawer ha-sidebar');
+    return sidebar
+}
+function getAppDrawerLayout() {
+    let appDrawerLayout: any = document.querySelector('home-assistant');
+    appDrawerLayout = appDrawerLayout && appDrawerLayout.shadowRoot;
+    appDrawerLayout = appDrawerLayout && appDrawerLayout.querySelector('home-assistant-main');
+    appDrawerLayout = appDrawerLayout && appDrawerLayout.shadowRoot;
+    appDrawerLayout = appDrawerLayout && appDrawerLayout.querySelector('app-drawer-layout');
+    appDrawerLayout = appDrawerLayout && appDrawerLayout.shadowRoot;
+    appDrawerLayout = appDrawerLayout && appDrawerLayout.querySelector('#contentContainer');
+    return appDrawerLayout;
+}
+
+function getAppDrawer() {
+    let appDrawer: any = document.querySelector('home-assistant');
+    appDrawer = appDrawer && appDrawer.shadowRoot;
+    appDrawer = appDrawer && appDrawer.querySelector('home-assistant-main');
+    appDrawer = appDrawer && appDrawer.shadowRoot;
+    appDrawer = appDrawer && appDrawer.querySelector('app-drawer-layout app-drawer');
+    appDrawer = appDrawer && appDrawer.shadowRoot;
+    appDrawer = appDrawer && appDrawer.querySelector('#contentContainer');
+    return appDrawer;
+}
+
+function getParameterByName(name, url = window.location.href) {
+  name = name.replace(/[\[\]]/g, '\\$&');
+  var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+      results = regex.exec(url);
+  if (!results) return null;
+  if (!results[2]) return '';
+  return decodeURIComponent(results[2].replace(/\+/g, ' '));
+}
 
 function update(appLayout, sidebarConfig) {
+  console.group('update');
   const width = document.body.clientWidth;
   appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
 
   let root = getRoot();
   const header = root.shadowRoot.querySelector('ch-header');
+  const headerFooter = root.shadowRoot.querySelector('ch-footer');
+  const offParam = getParameterByName('sidebarOff');
+  const view = root.shadowRoot.querySelector('hui-view');
+
   if(header) {
     console.log('Header found!');
   } else {
     console.log('Header not found!')
   }
-  if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile) {
-    console.log('Action: Show header!');
-    if(header) {
-      header.style.display = 'flex';
+  if(headerFooter) {
+    console.log('headerFooter found!');
+  } else {
+    console.log('headerFooter not found!')
+  }
+  if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile && offParam == null) {
+    console.log('Action: Show headerFooter!');
+    if(headerFooter) {
+      headerFooter.style.display = 'flex';
     }
-  } else if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
-    console.log('Action: Hide header!')
+  } else if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && offParam == null) {
+    console.log('Action: Hide header and headerFooter!')
     if(header) {
       header.style.display = 'none';
     }
+    if(headerFooter) {
+      headerFooter.style.display = 'none';
+    }
+    if(view) {
+      view.style.minHeight = "calc(100vh - 4px)";
+    }
   }
+  console.groupEnd();
 }
 
 function subscribeEvens(appLayout: any, sidebarConfig, contentContainer: any, sidebar: any) {
@@ -731,13 +783,31 @@ async function getConfig() {
 }
 
 async function buildSidebar() {
-  let lovelace = await getConfig();
+  const lovelace = await getConfig();
   if(lovelace.config.sidebar) {
     const sidebarConfig = Object.assign({}, lovelace.config.sidebar);
     if(!sidebarConfig.width || (sidebarConfig.width && typeof sidebarConfig.width == 'number' && sidebarConfig.width > 0 && sidebarConfig.width < 100 ) || (sidebarConfig.width && typeof sidebarConfig.width == 'object')) {
-      let root = getRoot();
-      if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true) {
-        root.shadowRoot.querySelector('ch-header').style.display = 'none';
+      const root = getRoot();
+      const hassSidebar = getSidebar();
+      const appDrawerLayout = getAppDrawerLayout();
+      const appDrawer = getAppDrawer();
+      const offParam = getParameterByName('sidebarOff');
+      
+      if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && offParam == null) {      
+        if(root.shadowRoot.querySelector('ch-header')) root.shadowRoot.querySelector('ch-header').style.display = 'none';
+        if(root.shadowRoot.querySelector('ch-footer')) root.shadowRoot.querySelector('ch-footer').style.display = 'none';
+        if(root.shadowRoot.querySelector('hui-view')) root.shadowRoot.querySelector('hui-view').style.minHeight = "calc(100vh - 4px)";
+      }
+      if(sidebarConfig.hideHassSidebar && sidebarConfig.hideHassSidebar === true && offParam == null) {
+        if(hassSidebar) {
+          hassSidebar.style.display = 'none';
+        }
+        if(appDrawerLayout) {
+          appDrawerLayout.style.marginLeft = "0";
+        }
+        if(appDrawer) {
+          appDrawer.style.display = 'none';
+        }
       }
       if(!sidebarConfig.breakpoints) {
         sidebarConfig.breakpoints = {
@@ -780,6 +850,9 @@ async function buildSidebar() {
       await buildCard(sidebar, sidebarConfig);
       update(appLayout, sidebarConfig);
       subscribeEvens(appLayout, sidebarConfig, contentContainer, sidebar);
+      setTimeout(function() {
+        update(appLayout, sidebarConfig);
+      }, 1000);
     } else {
       console.log('Error sidebar in width config!');
     }
