@@ -175,7 +175,7 @@ class SidebarCard extends LitElement {
 
   updateSidebarSize(root) {
     const sidebarInner = this.shadowRoot.querySelector('.sidebar-inner');
-    const header = root.shadowRoot.querySelector('ch-header');
+    const header = root.shadowRoot.querySelector('ch-header') || root.shadowRoot.querySelector('app-header');
     const _1vh = window.innerHeight / 100;
     if(sidebarInner) {
       sidebarInner.style.width = this.offsetWidth + 'px';
@@ -698,7 +698,7 @@ function update(appLayout, sidebarConfig) {
   appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
 
   let root = getRoot();
-  const header = root.shadowRoot.querySelector('ch-header');
+  const header = root.shadowRoot.querySelector('ch-header') || root.shadowRoot.querySelector('app-header');
   const headerFooter = root.shadowRoot.querySelector('ch-footer');
   const offParam = getParameterByName('sidebarOff');
   const view = root.shadowRoot.querySelector('hui-view');
@@ -795,6 +795,7 @@ async function buildSidebar() {
       
       if(sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && offParam == null) {      
         if(root.shadowRoot.querySelector('ch-header')) root.shadowRoot.querySelector('ch-header').style.display = 'none';
+        if(root.shadowRoot.querySelector('app-header')) root.shadowRoot.querySelector('app-header').style.display = 'none';
         if(root.shadowRoot.querySelector('ch-footer')) root.shadowRoot.querySelector('ch-footer').style.display = 'none';
         if(root.shadowRoot.querySelector('hui-view')) root.shadowRoot.querySelector('hui-view').style.minHeight = "calc(100vh - 4px)";
       }

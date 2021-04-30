@@ -2552,6 +2552,8 @@ async function _selectTree(root, path, all=false) {
   if(typeof(path) === "string") {
     path = path.split(/(\$| )/);
   }
+  if(path[path.length-1] === "")
+     path.pop();
   for(const [i, p] of path.entries()) {
     if(!p.trim().length) continue;
     if(!el) return null;
@@ -2624,7 +2626,7 @@ if(params.get('deviceID')) {
   setDeviceID(params.get('deviceID'));
 }
 
-function subscribeRenderTemplate(conn, onChange, params) {
+function subscribeRenderTemplate(conn, onChange, params, stringify=true) {
   // params = {template, entity_ids, variables}
   if(!conn)
     conn = hass().connection;
@@ -2639,11 +2641,15 @@ function subscribeRenderTemplate(conn, onChange, params) {
 
   return conn.subscribeMessage(
     (msg) => {
-      let res = msg.result;
-      // Localize "_(key)" if found in template results
-      const localize_function = /_\([^)]*\)/g;
-      res = res.replace(localize_function, (key) => hass().localize(key.substring(2, key.length-1)) || key);
-      onChange(res);
+      if(stringify) {
+        let res = String(msg.result);
+        // Localize "_(key)" if found in template results
+        const localize_function = /_\([^)]*\)/g;
+        res = res.replace(localize_function, (key) => hass().localize(key.substring(2, key.length-1)) || key);
+        onChange(res);
+      } else {
+        onChange(msg.result);
+      }
     },
     { type: "render_template",
       template,
@@ -17958,7 +17964,7 @@ class SidebarCard extends LitElement {
     }
     updateSidebarSize(root) {
         const sidebarInner = this.shadowRoot.querySelector('.sidebar-inner');
-        const header = root.shadowRoot.querySelector('ch-header');
+        const header = root.shadowRoot.querySelector('ch-header') || root.shadowRoot.querySelector('app-header');
         const _1vh = window.innerHeight / 100;
         if (sidebarInner) {
             sidebarInner.style.width = this.offsetWidth + 'px';
@@ -18469,7 +18475,7 @@ function update(appLayout, sidebarConfig) {
     const width = document.body.clientWidth;
     appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
     let root = getRoot();
-    const header = root.shadowRoot.querySelector('ch-header');
+    const header = root.shadowRoot.querySelector('ch-header') || root.shadowRoot.querySelector('app-header');
     const headerFooter = root.shadowRoot.querySelector('ch-footer');
     const offParam = getParameterByName('sidebarOff');
     const view = root.shadowRoot.querySelector('hui-view');
@@ -18560,6 +18566,8 @@ async function buildSidebar() {
             if (sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && offParam == null) {
                 if (root.shadowRoot.querySelector('ch-header'))
                     root.shadowRoot.querySelector('ch-header').style.display = 'none';
+                if (root.shadowRoot.querySelector('app-header'))
+                    root.shadowRoot.querySelector('app-header').style.display = 'none';
                 if (root.shadowRoot.querySelector('ch-footer'))
                     root.shadowRoot.querySelector('ch-footer').style.display = 'none';
                 if (root.shadowRoot.querySelector('hui-view'))
