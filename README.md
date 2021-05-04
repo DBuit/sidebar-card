@@ -64,6 +64,7 @@ Under sidebar you can configure the following options:
 | `style` | css | optional | see info below | Overwrite some color variables or write your own styles |
 | `bottomCard` | object | optional | see info below | Define any card that will be rendered at the bottom of the sidebar |
 | `hideOnPath` | array | optional | - /lovelace/camera | If you don't want the sidebar on every path you can add a list of paths where it should hide the sidebar |
+| `debug` | boolean | optional | `false` | Show debugging messages in the browser's developer console |
 
 
 When using hideTopMenu and/or hideHassSidebar you can disable this by adding `?sidebarOff` to the url.
