@@ -17909,7 +17909,7 @@ class SidebarCard extends LitElement {
                       ${sidebarMenuItem.name}
                       ${sidebarMenuItem.icon
                     ? html `
-                            <ha-icon icon="${sidebarMenuItem.icon}" />
+                            <ha-icon @click="${(e) => this._menuAction(e)}" icon="${sidebarMenuItem.icon}"></ha-icon>
                           `
                     : html ``}
                     </li>
@@ -18102,8 +18102,8 @@ class SidebarCard extends LitElement {
         }
     }
     _menuAction(e) {
-        if (e.target.dataset && e.target.dataset.menuitem) {
-            const menuItem = JSON.parse(e.target.dataset.menuitem);
+        if ((e.target.dataset && e.target.dataset.menuitem) || (e.target.parentNode.dataset && e.target.parentNode.dataset.menuitem)) {
+            const menuItem = JSON.parse(e.target.dataset.menuitem || e.target.parentNode.dataset.menuitem);
             this._customAction(menuItem);
             this._updateActiveMenu();
         }
