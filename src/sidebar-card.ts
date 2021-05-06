@@ -769,7 +769,7 @@ async function log2console(method: string, message: string, object?: any) {
   if (lovelace.config.sidebar) {
     const sidebarConfig = Object.assign({}, lovelace.config.sidebar);
     if (sidebarConfig.debug === true) {
-      console.info(`%c${SIDEBAR_CARD_TITLE}: %c ${method} -> %c ${message}`, 'color: chartreuse; background: black; font-weight: 700;', 'color: yellow; background: black; font-weight: 700;', '', object);
+      console.info(`%c${SIDEBAR_CARD_TITLE}: %c ${method.padEnd(24)} -> %c ${message}`, 'color: chartreuse; background: black; font-weight: 700;', 'color: yellow; background: black; font-weight: 700;', '', object);
     }
   }
 }
@@ -779,7 +779,7 @@ async function error2console(method: string, message: string, object?: any) {
   if (lovelace.config.sidebar) {
     const sidebarConfig = Object.assign({}, lovelace.config.sidebar);
     if (sidebarConfig.debug === true) {
-      console.error(`%c${SIDEBAR_CARD_TITLE}: %c ${method} -> %c ${message}`, 'color: red; background: black; font-weight: 700;', 'color: white; background: black; font-weight: 700;', 'color:red', object);
+      console.error(`%c${SIDEBAR_CARD_TITLE}: %c ${method.padEnd(24)} -> %c ${message}`, 'color: red; background: black; font-weight: 700;', 'color: white; background: black; font-weight: 700;', 'color:red', object);
     }
   }
 }
@@ -943,7 +943,10 @@ async function getConfig() {
 
 async function buildSidebar() {
   // show console message on init
-  console.info(`%c  SIDEBAR-CARD          \n%c  Version: ${SIDEBAR_CARD_VERSION}      `, 'color: chartreuse; background: black; font-weight: 700;', 'color: white; background: dimgrey; font-weight: 700;');
+  console.info(`%c  ${SIDEBAR_CARD_TITLE.padEnd(24)}%c
+  Version: ${SIDEBAR_CARD_VERSION.padEnd(9)}      `
+    , 'color: chartreuse; background: black; font-weight: 700;'
+    , 'color: white; background: dimgrey; font-weight: 700;');
 
   const lovelace = await getConfig();
   if (lovelace.config.sidebar) {
