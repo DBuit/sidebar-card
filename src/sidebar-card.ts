@@ -15,12 +15,12 @@ const SIDEBAR_CARD_VERSION = '0.1.7.9';
 // ###   Import dependencies
 // ##########################################################################################
 
-import {LitElement, html, css} from 'lit-element';
-import {moreInfo} from 'card-tools/src/more-info';
-import {hass, provideHass} from 'card-tools/src/hass';
-import {subscribeRenderTemplate} from 'card-tools/src/templates';
+import { LitElement, html, css } from 'lit-element';
+import { moreInfo } from 'card-tools/src/more-info';
+import { hass, provideHass } from 'card-tools/src/hass';
+import { subscribeRenderTemplate } from 'card-tools/src/templates';
 import moment from 'moment/min/moment-with-locales';
-import {toggleEntity, navigate, forwardHaptic, getLovelace} from 'custom-card-helpers';
+import { toggleEntity, navigate, forwardHaptic, getLovelace } from 'custom-card-helpers';
 
 // ##########################################################################################
 // ###   The actual Sidebar Card element
@@ -127,7 +127,7 @@ class SidebarCard extends LitElement {
                 ${sidebarMenu.map((sidebarMenuItem) => {
                   return html`
                     <li @click="${(e) => this._menuAction(e)}" class="${sidebarMenuItem.state && this.hass.states[sidebarMenuItem.state].state != 'off' && this.hass.states[sidebarMenuItem.state].state != 'unavailable' ? 'active' : ''}" data-type="${sidebarMenuItem.action}" data-path="${sidebarMenuItem.navigation_path ? sidebarMenuItem.navigation_path : ''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}">
-                      ${sidebarMenuItem.name}
+                      <span>${sidebarMenuItem.name}</span>
                       ${sidebarMenuItem.icon
                         ? html`
                             <ha-icon @click="${(e) => this._menuAction(e)}" icon="${sidebarMenuItem.icon}"></ha-icon>
@@ -390,7 +390,7 @@ class SidebarCard extends LitElement {
         },
         {
           template: this.config.template,
-          variables: {config: this.config},
+          variables: { config: this.config },
           entity_ids: this.config.entity_ids,
         }
       );
@@ -416,7 +416,10 @@ class SidebarCard extends LitElement {
         // --clock-middle-border: #000;
         // --sidebar-background: #FFF;
         // --sidebar-text-color: #000;
-        background-color: var(--sidebar-background, #fff);
+        // --sidebar-icon-color: #000;
+        // --sidebar-selected-text-color: #000;
+        // --sidebar-selected-icon-color: #000;
+        background-color: var(--paper-listbox-background-color, var(--primary-background-color, var(--sidebar-background, #fff)));
       }
       .sidebar-inner {
         padding: 20px;
@@ -432,12 +435,12 @@ class SidebarCard extends LitElement {
         padding: 20px 0;
         border-top: 1px solid rgba(255, 255, 255, 0.2);
         border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        color: var(--sidebar-text-color, #000);
       }
       .sidebarMenu li {
+        color: var(--sidebar-text-color, var(--sidebar-text-color, #000));
+        position: relative;
         padding: 10px 20px;
         border-radius: 12px;
-        color: inherit;
         font-size: 18px;
         line-height: 24px;
         font-weight: 300;
@@ -447,12 +450,24 @@ class SidebarCard extends LitElement {
       }
       .sidebarMenu li ha-icon {
         float: right;
-      }
-      .sidebarMenu li.active ha-icon {
-        color: rgb(247, 217, 89);
+        color: var(--sidebar-icon-color, #000);
       }
       .sidebarMenu li.active {
-        background-color: rgba(0, 0, 0, 0.2);
+        color: var(--sidebar-selected-text-color);
+      }
+      .sidebarMenu li.active ha-icon {
+        color: var(--sidebar-selected-icon-color, rgb(247, 217, 89));
+      }
+      .sidebarMenu li.active::before {
+        content: "";
+        position: absolute;
+        top: 0; 
+        left: 0;
+        width: 100%; 
+        height: 100%;  
+        background-color: var(--sidebar-selected-icon-color, #000);
+        opacity: 0.12;
+        border-radius: 12px;
       }
       h1 {
         margin-top: 0;
@@ -461,17 +476,21 @@ class SidebarCard extends LitElement {
         line-height: 32px;
         font-weight: 200;
         color: var(--sidebar-text-color, #000);
+        cursor: default;
       }
       h1.digitalClock {
         font-size: 60px;
         line-height: 60px;
+        cursor: default;
       }
       h1.digitalClock.with-seconds {
         font-size: 48px;
         line-height: 48px;
+        cursor: default;
       }
       h1.digitalClock.with-title {
         margin-bottom: 0;
+        cursor: default;
       }
       h2 {
         margin: 0;
@@ -479,6 +498,7 @@ class SidebarCard extends LitElement {
         line-height: 26px;
         font-weight: 200;
         color: var(--sidebar-text-color, #000);
+        cursor: default;
       }
       .template {
         margin: 0;
