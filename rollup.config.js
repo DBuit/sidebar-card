@@ -16,15 +16,17 @@ const serveopts = {
   headers: {
     'Access-Control-Allow-Origin': '*',
   },
+  sourcemap: false
 };
 
 const plugins = [
-  nodeResolve({}),
-  commonjs(),
-  typescript(),
-  json(),
+  nodeResolve({sourcemap: false}),
+  commonjs({sourcemap: false}),
+  typescript({sourcemap: false}),
+  json({sourcemap: false}),
   babel({
     exclude: 'node_modules/**',
+    sourcemap: false
   }),
   dev && serve(serveopts),
   !dev && terser(),
@@ -36,6 +38,7 @@ export default [
     output: {
       dir: 'dist',
       format: 'es',
+      sourcemap: false
     },
     plugins: [...plugins],
   },
