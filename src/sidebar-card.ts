@@ -272,7 +272,7 @@ class SidebarCard extends LitElement {
     setTimeout(() => {
       self.updateSidebarSize(root);
       self._updateActiveMenu();
-    }, 1000);
+    }, 1);
     window.addEventListener(
       'resize',
       function() {
@@ -318,7 +318,7 @@ class SidebarCard extends LitElement {
             }, 100);
           }
         }
-      }, 2000);
+      }, 2);
     }
   }
 
@@ -459,12 +459,12 @@ class SidebarCard extends LitElement {
         color: var(--sidebar-selected-icon-color, rgb(247, 217, 89));
       }
       .sidebarMenu li.active::before {
-        content: "";
+        content: '';
         position: absolute;
-        top: 0; 
+        top: 0;
         left: 0;
-        width: 100%; 
-        height: 100%;  
+        width: 100%;
+        height: 100%;
         background-color: var(--sidebar-selected-icon-color, #000);
         opacity: 0.12;
         border-radius: 12px;
@@ -857,7 +857,7 @@ function updateStyling(appLayout: any, sidebarConfig: any) {
   const hassHeader = root.shadowRoot.querySelector('ch-header') || root.shadowRoot.querySelector('app-header');
   log2console('updateStyling', hassHeader ? 'Home Assistant header found!' : 'Home Assistant header not found!');
   const hassFooter = root.shadowRoot.querySelector('ch-footer' || root.shadowRoot.querySelector('app-footer'));
-  log2console('updateStyling', hassHeader ? 'Home Assistant footer found!' : 'Home Assistant footer not found!');
+  log2console('updateStyling', hassFooter ? 'Home Assistant footer found!' : 'Home Assistant footer not found!');
   const offParam = getParameterByName('sidebarOff');
   const view = root.shadowRoot.querySelector('hui-view');
 
@@ -910,6 +910,30 @@ function subscribeEvents(appLayout: any, sidebarConfig: any, contentContainer: a
   }
 }
 
+function watchLocationChange() {
+  setTimeout(() => {
+    window.addEventListener('location-changed', () => {
+      const root = getRoot();
+      if (!root) return; // location changed before finishing dom rendering
+      const appLayout = root.shadowRoot.querySelector('ha-app-layout');
+      const wrapper = appLayout.shadowRoot.querySelector('#wrapper');
+      if (!wrapper) {
+        buildSidebar();
+      } else {
+        const customSidebarWrapper = wrapper.querySelector('#customSidebarWrapper');
+        if (!customSidebarWrapper) {
+          buildSidebar();
+        } else {
+          const customSidebar = customSidebarWrapper.querySelector('#customSidebar');
+          if (!customSidebar) {
+            buildSidebar();
+          }
+        }
+      }
+    });
+  }, 1000);
+}
+
 // build the custom sidebar card
 async function buildCard(sidebar: any, config: any) {
   const sidebarCard = document.createElement('sidebar-card') as SidebarCard;
@@ -942,12 +966,6 @@ async function getConfig() {
 // ##########################################################################################
 
 async function buildSidebar() {
-  // show console message on init
-  console.info(`%c  ${SIDEBAR_CARD_TITLE.padEnd(24)}%c
-  Version: ${SIDEBAR_CARD_VERSION.padEnd(9)}      `
-    , 'color: chartreuse; background: black; font-weight: 700;'
-    , 'color: white; background: dimgrey; font-weight: 700;');
-
   const lovelace = await getConfig();
   if (lovelace.config.sidebar) {
     const sidebarConfig = Object.assign({}, lovelace.config.sidebar);
@@ -1002,9 +1020,9 @@ async function buildSidebar() {
         style.appendChild(document.createTextNode(css));
       }
       // get element to wrap
-      let contentContainer: any = appLayout.shadowRoot.querySelector('#contentContainer');
+      let contentContainer = appLayout.shadowRoot.querySelector('#contentContainer');
       // create wrapper container
-      var wrapper = document.createElement('div');
+      const wrapper = document.createElement('div');
       wrapper.setAttribute('id', 'customSidebarWrapper');
       // insert wrapper before el in the DOM tree
       contentContainer.parentNode.insertBefore(wrapper, contentContainer);
@@ -1014,17 +1032,26 @@ async function buildSidebar() {
       wrapper.appendChild(sidebar);
       wrapper.appendChild(contentContainer);
       await buildCard(sidebar, sidebarConfig);
-      updateStyling(appLayout, sidebarConfig);
+      //updateStyling(appLayout, sidebarConfig);
       subscribeEvents(appLayout, sidebarConfig, contentContainer, sidebar);
       setTimeout(function() {
         updateStyling(appLayout, sidebarConfig);
-      }, 1000);
+      }, 1);
     } else {
-      console.log('SIDEBAR-CARD: [buildSidebar] -> Error sidebar in width config!');
+      error2console('buildSidebar', 'Error sidebar in width config!');
     }
   } else {
-    console.log('SIDEBAR-CARD: [buildSidebar] -> No sidebar in config found!');
+    log2console('buildSidebar', 'No sidebar in config found!');
   }
 }
 
+  // show console message on init
+console.info(
+  `%c  ${SIDEBAR_CARD_TITLE.padEnd(24)}%c
+  Version: ${SIDEBAR_CARD_VERSION.padEnd(9)}      `,
+  'color: chartreuse; background: black; font-weight: 700;',
+  'color: white; background: dimgrey; font-weight: 700;'
+);
+
 buildSidebar();
+watchLocationChange();
