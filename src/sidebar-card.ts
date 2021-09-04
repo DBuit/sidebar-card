@@ -419,7 +419,7 @@ class SidebarCard extends LitElement {
         // --sidebar-icon-color: #000;
         // --sidebar-selected-text-color: #000;
         // --sidebar-selected-icon-color: #000;
-        background-color: var(--paper-listbox-background-color, var(--primary-background-color, var(--sidebar-background, #fff)));
+        background-color:  var(--sidebar-background, var(--paper-listbox-background-color, var(--primary-background-color, #fff)));
       }
       .sidebar-inner {
         padding: 20px;
@@ -437,7 +437,7 @@ class SidebarCard extends LitElement {
         border-bottom: 1px solid rgba(255, 255, 255, 0.2);
       }
       .sidebarMenu li {
-        color: var(--sidebar-text-color, var(--sidebar-text-color, #000));
+        color: var(--sidebar-text-color, #000);
         position: relative;
         padding: 10px 20px;
         border-radius: 12px;
