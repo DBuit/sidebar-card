@@ -22,7 +22,11 @@ const serveopts = {
 const plugins = [
   nodeResolve({sourcemap: false}),
   commonjs({sourcemap: false}),
-  typescript({sourcemap: false}),
+  typescript({
+    sourcemap: false,
+    typescript: require('typescript'),
+    objectHashIgnoreUnknownHack: true
+  }),
   json({sourcemap: false}),
   babel({
     exclude: 'node_modules/**',
