@@ -658,4 +658,4 @@ s.defineLocale("zh-tw",{months:"一月_二月_三月_四月_五月_六月_七月
         display: flex;
         margin-top: auto;
       }
-    `}}),console.info(`%c  ${"SIDEBAR-CARD".padEnd(24)}%c\n  Version: ${"0.1.8.2".padEnd(9)}      `,"color: chartreuse; background: black; font-weight: 700;","color: white; background: dimgrey; font-weight: 700;"),Ie(),setTimeout((()=>{window.addEventListener("location-changed",(()=>{const e=Ce();if(!e)return;const t=e.shadowRoot.querySelector("ha-app-layout").shadowRoot.querySelector("#wrapper");if(t){const e=t.querySelector("#customSidebarWrapper");e&&e.querySelector("#customSidebar")||Ie()}else Ie()}))}),1e3);
+    `}}),console.info(`%c  ${"SIDEBAR-CARD".padEnd(24)}%c\n  Version: ${"0.1.8.3".padEnd(9)}      `,"color: chartreuse; background: black; font-weight: 700;","color: white; background: dimgrey; font-weight: 700;"),Ie(),setTimeout((()=>{window.addEventListener("location-changed",(()=>{const e=Ce();if(!e)return;const t=e.shadowRoot.querySelector("ha-app-layout").shadowRoot.querySelector("#wrapper");if(t){const e=t.querySelector("#customSidebarWrapper");e&&e.querySelector("#customSidebar")||Ie()}else Ie()}))}),1e3);
