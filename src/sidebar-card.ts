@@ -9,18 +9,18 @@
 // ##########################################################################################
 
 const SIDEBAR_CARD_TITLE = 'SIDEBAR-CARD';
-const SIDEBAR_CARD_VERSION = '0.1.8.3';
+const SIDEBAR_CARD_VERSION = '0.1.8.4';
 
 // ##########################################################################################
 // ###   Import dependencies
 // ##########################################################################################
 
-import { LitElement, html, css } from 'lit-element';
+import { css, html, LitElement } from 'lit-element';
 import { moreInfo } from 'card-tools/src/more-info';
 import { hass, provideHass } from 'card-tools/src/hass';
 import { subscribeRenderTemplate } from 'card-tools/src/templates';
 import moment from 'moment/min/moment-with-locales';
-import { toggleEntity, navigate, forwardHaptic, getLovelace } from 'custom-card-helpers';
+import { forwardHaptic, getLovelace, navigate, toggleEntity } from 'custom-card-helpers';
 
 // ##########################################################################################
 // ###   The actual Sidebar Card element
@@ -73,7 +73,7 @@ class SidebarCard extends LitElement {
   render() {
     const sidebarMenu = this.config.sidebarMenu;
     const title = 'title' in this.config ? this.config.title : false;
-    const addStyle = 'style' in this.config ? true : false;
+    const addStyle = 'style' in this.config;
 
     this.clock = this.config.clock ? this.config.clock : false;
     this.digitalClock = this.config.digitalClock ? this.config.digitalClock : false;
@@ -160,9 +160,11 @@ class SidebarCard extends LitElement {
   }
 
   _runClock() {
+    let hoursampm;
+    let digitalTime;
     const date = new Date();
 
-    var fullhours = date.getHours().toString();
+    let fullHours = date.getHours().toString();
     const realHours = date.getHours();
     const hours = ((realHours + 11) % 12) + 1;
     const minutes = date.getMinutes();
@@ -179,7 +181,7 @@ class SidebarCard extends LitElement {
     }
     if (this.digitalClock && !this.twelveHourVersion) {
       const minutesString = minutes.toString();
-      var digitalTime = fullhours.length < 2 ? '0' + fullhours + ':' : fullhours + ':';
+      digitalTime = fullHours.length < 2 ? '0' + fullHours + ':' : fullHours + ':';
       if (this.digitalClockWithSeconds) {
         digitalTime += minutesString.length < 2 ? '0' + minutesString + ':' : minutesString + ':';
         const secondsString = seconds.toString();
@@ -189,12 +191,12 @@ class SidebarCard extends LitElement {
       }
       this.shadowRoot.querySelector('.digitalClock').textContent = digitalTime;
     } else if (this.digitalClock && this.twelveHourVersion && !this.period) {
-      var hoursampm = date.getHours();
+      hoursampm = date.getHours();
       hoursampm = hoursampm % 12;
       hoursampm = hoursampm ? hoursampm : 12;
-      fullhours = hoursampm.toString();
+      fullHours = hoursampm.toString();
       const minutesString = minutes.toString();
-      var digitalTime = fullhours.length < 2 ? '0' + fullhours + ':' : fullhours + ':';
+      digitalTime = fullHours.length < 2 ? '0' + fullHours + ':' : fullHours + ':';
       if (this.digitalClockWithSeconds) {
         digitalTime += minutesString.length < 2 ? '0' + minutesString + ':' : minutesString + ':';
         const secondsString = seconds.toString();
@@ -206,12 +208,12 @@ class SidebarCard extends LitElement {
       this.shadowRoot.querySelector('.digitalClock').textContent = digitalTime;
     } else if (this.digitalClock && this.twelveHourVersion && this.period) {
       var ampm = realHours >= 12 ? 'pm' : 'am';
-      var hoursampm = date.getHours();
+      hoursampm = date.getHours();
       hoursampm = hoursampm % 12;
       hoursampm = hoursampm ? hoursampm : 12;
-      fullhours = hoursampm.toString();
+      fullHours = hoursampm.toString();
       const minutesString = minutes.toString();
-      var digitalTime = fullhours.length < 2 ? '0' + fullhours + ':' : fullhours + ':';
+      digitalTime = fullHours.length < 2 ? '0' + fullHours + ':' : fullHours + ':';
       if (this.digitalClockWithSeconds) {
         digitalTime += minutesString.length < 2 ? '0' + minutesString + ':' : minutesString + ':';
         const secondsString = seconds.toString();
@@ -227,8 +229,7 @@ class SidebarCard extends LitElement {
   _runDate() {
     const now = moment();
     now.locale(this.hass.language);
-    const date = now.format(this.dateFormat);
-    this.shadowRoot.querySelector('.date').textContent = date;
+    this.shadowRoot.querySelector('.date').textContent = now.format(this.dateFormat);
   }
 
   updateSidebarSize(root) {
@@ -382,10 +383,9 @@ class SidebarCard extends LitElement {
       subscribeRenderTemplate(
         null,
         (res) => {
-          var result = res.match(/<li>([^]*?)<\/li>/g).map(function(val) {
+          this.templateLines = res.match(/<li>([^]*?)<\/li>/g).map(function (val) {
             return val.replace(/<\/?li>/g, '');
           });
-          this.templateLines = result;
           this.requestUpdate();
         },
         {
@@ -862,6 +862,10 @@ function updateStyling(appLayout: any, sidebarConfig: any) {
   const view = root.shadowRoot.querySelector('hui-view');
 
   if (sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile && offParam == null) {
+    if (hassHeader) {
+      log2console('updateStyling', 'Action: Show Home Assistant header!');
+      hassHeader.style.display = 'block';
+    }
     if (hassFooter) {
       log2console('updateStyling', 'Action: Show Home Assistant footer!');
       hassFooter.style.display = 'flex';
