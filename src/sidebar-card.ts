@@ -235,10 +235,11 @@ class SidebarCard extends LitElement {
   updateSidebarSize(root) {
     const sidebarInner = this.shadowRoot.querySelector('.sidebar-inner');
     const header = root.shadowRoot.querySelector('ch-header') || root.shadowRoot.querySelector('app-header');
+    const offParam = getParameterByName('sidebarOff');
 
     if (sidebarInner) {
       sidebarInner.style.width = this.offsetWidth + 'px';
-      let headerHeight = this.config.hideTopMenu ? 0 : header.offsetHeight;
+      let headerHeight = this.config.hideTopMenu && offParam == null ? 0 : header.offsetHeight;
       log2console('updateSidebarSize', 'headerHeight', headerHeight);
       sidebarInner.style.height = `calc(${window.innerHeight}px - ${headerHeight}px)`; //100 * _1vh - headerHeight + 'px';
       sidebarInner.style.top = headerHeight + 'px';
@@ -859,12 +860,15 @@ function updateStyling(appLayout: any, sidebarConfig: any) {
   const hassFooter = root.shadowRoot.querySelector('ch-footer' || root.shadowRoot.querySelector('app-footer'));
   log2console('updateStyling', hassFooter ? 'Home Assistant footer found!' : 'Home Assistant footer not found!');
   const offParam = getParameterByName('sidebarOff');
-  const view = root.shadowRoot.querySelector('hui-view');
+  const view = root.shadowRoot.getElementById('view');
 
   if (sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile && offParam == null) {
     if (hassHeader) {
       log2console('updateStyling', 'Action: Show Home Assistant header!');
       hassHeader.style.display = 'block';
+    }
+    if (view) {
+      view.style.minHeight = 'calc(100vh - var(--header-height))';
     }
     if (hassFooter) {
       log2console('updateStyling', 'Action: Show Home Assistant footer!');
@@ -880,7 +884,7 @@ function updateStyling(appLayout: any, sidebarConfig: any) {
       hassFooter.style.display = 'none';
     }
     if (view) {
-      view.style.minHeight = 'calc(100vh - 4px)';
+      view.style.minHeight = 'calc(100vh)';
     }
   }
 }
@@ -984,7 +988,7 @@ async function buildSidebar() {
         if (root.shadowRoot.querySelector('ch-header')) root.shadowRoot.querySelector('ch-header').style.display = 'none';
         if (root.shadowRoot.querySelector('app-header')) root.shadowRoot.querySelector('app-header').style.display = 'none';
         if (root.shadowRoot.querySelector('ch-footer')) root.shadowRoot.querySelector('ch-footer').style.display = 'none';
-        if (root.shadowRoot.querySelector('hui-view')) root.shadowRoot.querySelector('hui-view').style.minHeight = 'calc(100vh - 4px)';
+        if (root.shadowRoot.getElementById('view')) root.shadowRoot.getElementById('view').style.minHeight = 'calc(100vh)';
       }
       if (sidebarConfig.hideHassSidebar && sidebarConfig.hideHassSidebar === true && offParam == null) {
         if (hassSidebar) {
