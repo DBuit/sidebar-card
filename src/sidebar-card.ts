@@ -429,6 +429,7 @@ class SidebarCard extends LitElement {
         box-sizing: border-box;
         position: fixed;
         width: 0;
+        overflow-x: scroll;
       }
       .sidebarMenu {
         list-style: none;
