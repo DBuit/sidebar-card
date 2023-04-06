@@ -20,7 +20,7 @@ import { moreInfo } from 'card-tools/src/more-info';
 import { hass, provideHass } from 'card-tools/src/hass';
 import { subscribeRenderTemplate } from 'card-tools/src/templates';
 import moment from 'moment/min/moment-with-locales';
-import { forwardHaptic, getLovelace, navigate, toggleEntity } from 'custom-card-helpers';
+import { forwardHaptic, navigate, toggleEntity } from 'custom-card-helpers';
 
 // ##########################################################################################
 // ###   The actual Sidebar Card element
@@ -637,7 +637,7 @@ function createCSS(sidebarConfig: any, width: number) {
       display:none!important;
       width:0!important;
     }
-    #contentContainer.hideSidebar {
+    #view.hideSidebar {
       width:100%!important;
     }
   `;
@@ -653,10 +653,12 @@ function createCSS(sidebarConfig: any, width: number) {
             overflow:hidden;
             display:none;
           } 
-          #contentContainer {
+          #view {
             width:` +
           (100 - sidebarConfig.width.mobile) +
           `%;
+          padding-top:0!important;
+          margin-top:0!important;
           }
         `;
       } else {
@@ -668,10 +670,12 @@ function createCSS(sidebarConfig: any, width: number) {
           `%;
             overflow:hidden;
           } 
-          #contentContainer {
+          #view {
             width:` +
           (100 - sidebarConfig.width.mobile) +
           `%;
+          padding-top:0!important;
+          margin-top:0!important;
           }
         `;
       }
@@ -686,10 +690,12 @@ function createCSS(sidebarConfig: any, width: number) {
             overflow:hidden;
             display:none;
           } 
-          #contentContainer {
+          #view {
             width:` +
           (100 - sidebarConfig.width.tablet) +
           `%;
+          padding-top:0!important;
+          margin-top:0!important;
           }
         `;
       } else {
@@ -701,10 +707,12 @@ function createCSS(sidebarConfig: any, width: number) {
           `%;
             overflow:hidden;
           } 
-          #contentContainer {
+          #view {
             width:` +
           (100 - sidebarConfig.width.tablet) +
           `%;
+          padding-top:0!important;
+          margin-top:0!important;
           }
         `;
       }
@@ -719,10 +727,12 @@ function createCSS(sidebarConfig: any, width: number) {
             overflow:hidden;
             display:none;
           } 
-          #contentContainer {
+          #view {
             width:` +
           (100 - sidebarConfig.width.desktop) +
           `%;
+          padding-top:0!important;
+          margin-top:0!important;
           }
         `;
       } else {
@@ -734,10 +744,12 @@ function createCSS(sidebarConfig: any, width: number) {
           `%;
             overflow:hidden;
           } 
-          #contentContainer {
+          #view {
             width:` +
           (100 - sidebarConfig.width.desktop) +
           `%;
+          padding-top:0!important;
+          margin-top:0!important;
           }
         `;
       }
@@ -751,10 +763,12 @@ function createCSS(sidebarConfig: any, width: number) {
       `%;
         overflow:hidden;
       } 
-      #contentContainer {
+      #view {
         width:` +
       contentWidth +
       `%;
+      padding-top:0!important;
+      margin-top:0!important;
       }
     `;
   }
@@ -764,6 +778,24 @@ function createCSS(sidebarConfig: any, width: number) {
 // ##########################################################################################
 // ###   Helper methods
 // ##########################################################################################
+
+function getLovelace() {
+  let root: any = document.querySelector('home-assistant');
+  root = root && root.shadowRoot;
+  root = root && root.querySelector('home-assistant-main');
+  root = root && root.shadowRoot;
+  root = root && root.querySelector('ha-drawer partial-panel-resolver');
+  root = root && root.shadowRoot || root;
+  root = root && root.querySelector('ha-panel-lovelace');
+  root = root && root.shadowRoot;
+  root = root && root.querySelector('hui-root');
+  if (root) {
+      const ll = root.lovelace;
+      ll.current_view = root.___curView;
+      return ll;
+  }
+  return null;
+}
 
 async function log2console(method: string, message: string, object?: any) {
   const lovelace = await getConfig();
@@ -791,7 +823,7 @@ function getRoot() {
   root = root && root.shadowRoot;
   root = root && root.querySelector('home-assistant-main');
   root = root && root.shadowRoot;
-  root = root && root.querySelector('app-drawer-layout partial-panel-resolver');
+  root = root && root.querySelector('ha-drawer partial-panel-resolver');
   root = (root && root.shadowRoot) || root;
   root = root && root.querySelector('ha-panel-lovelace');
   root = root && root.shadowRoot;
@@ -806,7 +838,7 @@ function getSidebar() {
   sidebar = sidebar && sidebar.shadowRoot;
   sidebar = sidebar && sidebar.querySelector('home-assistant-main');
   sidebar = sidebar && sidebar.shadowRoot;
-  sidebar = sidebar && sidebar.querySelector('app-drawer-layout app-drawer ha-sidebar');
+  sidebar = sidebar && sidebar.querySelector('ha-drawer ha-sidebar');
 
   return sidebar;
 }
@@ -817,9 +849,9 @@ function getAppDrawerLayout() {
   appDrawerLayout = appDrawerLayout && appDrawerLayout.shadowRoot;
   appDrawerLayout = appDrawerLayout && appDrawerLayout.querySelector('home-assistant-main');
   appDrawerLayout = appDrawerLayout && appDrawerLayout.shadowRoot;
-  appDrawerLayout = appDrawerLayout && appDrawerLayout.querySelector('app-drawer-layout');
+  appDrawerLayout = appDrawerLayout && appDrawerLayout.querySelector('ha-drawer'); // ha-drawer
   appDrawerLayout = appDrawerLayout && appDrawerLayout.shadowRoot;
-  appDrawerLayout = appDrawerLayout && appDrawerLayout.querySelector('#contentContainer');
+  appDrawerLayout = appDrawerLayout && appDrawerLayout.querySelector('.mdc-drawer-app-content');
 
   return appDrawerLayout;
 }
@@ -830,9 +862,9 @@ function getAppDrawer() {
   appDrawer = appDrawer && appDrawer.shadowRoot;
   appDrawer = appDrawer && appDrawer.querySelector('home-assistant-main');
   appDrawer = appDrawer && appDrawer.shadowRoot;
-  appDrawer = appDrawer && appDrawer.querySelector('app-drawer-layout app-drawer');
+  appDrawer = appDrawer && appDrawer.querySelector('ha-drawer'); // ha-drawer
   appDrawer = appDrawer && appDrawer.shadowRoot;
-  appDrawer = appDrawer && appDrawer.querySelector('#contentContainer');
+  appDrawer = appDrawer && appDrawer.querySelector('.mdc-drawer');
 
   return appDrawer;
 }
@@ -852,10 +884,10 @@ function getParameterByName(name: string, url = window.location.href) {
 // hides (if requested) the HA header, HA footer and/or HA sidebar and hides this sidebar if configured so
 function updateStyling(appLayout: any, sidebarConfig: any) {
   const width = document.body.clientWidth;
-  appLayout.shadowRoot.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
+  appLayout.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
 
   const root = getRoot();
-  const hassHeader = root.shadowRoot.querySelector('ch-header') || root.shadowRoot.querySelector('app-header');
+  const hassHeader = root.shadowRoot.querySelector('.header');
   log2console('updateStyling', hassHeader ? 'Home Assistant header found!' : 'Home Assistant header not found!');
   const hassFooter = root.shadowRoot.querySelector('ch-footer' || root.shadowRoot.querySelector('app-footer'));
   log2console('updateStyling', hassFooter ? 'Home Assistant footer found!' : 'Home Assistant footer not found!');
@@ -923,8 +955,8 @@ function watchLocationChange() {
     window.addEventListener('location-changed', () => {
       const root = getRoot();
       if (!root) return; // location changed before finishing dom rendering
-      const appLayout = root.shadowRoot.querySelector('ha-app-layout');
-      const wrapper = appLayout.shadowRoot.querySelector('#wrapper');
+      const appLayout = root.shadowRoot.querySelector('div');
+      const wrapper = appLayout.querySelector('#wrapper');
       if (!wrapper) {
         buildSidebar();
       } else {
@@ -1015,11 +1047,11 @@ async function buildSidebar() {
         }
       }
 
-      let appLayout = root.shadowRoot.querySelector('ha-app-layout');
+      let appLayout = root.shadowRoot.querySelector('div');
       let css = createCSS(sidebarConfig, document.body.clientWidth);
       let style: any = document.createElement('style');
       style.setAttribute('id', 'customSidebarStyle');
-      appLayout.shadowRoot.appendChild(style);
+      appLayout.appendChild(style);
       style.type = 'text/css';
       if (style.styleSheet) {
         // This is required for IE8 and below.
@@ -1028,7 +1060,7 @@ async function buildSidebar() {
         style.appendChild(document.createTextNode(css));
       }
       // get element to wrap
-      let contentContainer = appLayout.shadowRoot.querySelector('#contentContainer');
+      let contentContainer = appLayout.querySelector('#view');
       // create wrapper container
       const wrapper = document.createElement('div');
       wrapper.setAttribute('id', 'customSidebarWrapper');
