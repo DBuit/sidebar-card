@@ -18747,20 +18747,14 @@ function watchLocationChange() {
             if (!root)
                 return; // location changed before finishing dom rendering
             const appLayout = root.shadowRoot.querySelector('div');
-            const wrapper = appLayout.querySelector('#wrapper');
-            if (!wrapper) {
+            const customSidebarWrapper = appLayout.querySelector('#customSidebarWrapper');
+            if (!customSidebarWrapper) {
                 buildSidebar();
             }
             else {
-                const customSidebarWrapper = wrapper.querySelector('#customSidebarWrapper');
-                if (!customSidebarWrapper) {
+                const customSidebar = customSidebarWrapper.querySelector('#customSidebar');
+                if (!customSidebar) {
                     buildSidebar();
-                }
-                else {
-                    const customSidebar = customSidebarWrapper.querySelector('#customSidebar');
-                    if (!customSidebar) {
-                        buildSidebar();
-                    }
                 }
             }
         });
