@@ -236,13 +236,15 @@ class SidebarCard extends LitElement {
     const sidebarInner = this.shadowRoot.querySelector('.sidebar-inner');
     const header = root.shadowRoot.querySelector('ch-header') || root.shadowRoot.querySelector('app-header');
     const offParam = getParameterByName('sidebarOff');
-
     if (sidebarInner) {
       sidebarInner.style.width = this.offsetWidth + 'px';
-      let headerHeight = this.config.hideTopMenu && offParam == null ? 0 : header.offsetHeight;
-      log2console('updateSidebarSize', 'headerHeight', headerHeight);
-      sidebarInner.style.height = `calc(${window.innerHeight}px - ${headerHeight}px)`; //100 * _1vh - headerHeight + 'px';
-      sidebarInner.style.top = headerHeight + 'px';
+      if(this.config.hideTopMenu) {
+        sidebarInner.style.height = `${window.innerHeight}px`;
+        sidebarInner.style.top = '0px';
+      } else {
+        sidebarInner.style.height = `calc(${window.innerHeight}px - var(--header-height))`;
+        sidebarInner.style.top = 'var(--header-height)';
+      }
     }
   }
 
@@ -652,13 +654,13 @@ function createCSS(sidebarConfig: any, width: number) {
           `%;
             overflow:hidden;
             display:none;
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
           (100 - sidebarConfig.width.mobile) +
           `%;
-          padding-top:0!important;
-          margin-top:0!important;
+          ${sidebarConfig.hideTopMenu ? 'padding-top:0!important;margin-top:0!important;' : ''}
           }
         `;
       } else {
@@ -669,13 +671,13 @@ function createCSS(sidebarConfig: any, width: number) {
           sidebarConfig.width.mobile +
           `%;
             overflow:hidden;
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
           (100 - sidebarConfig.width.mobile) +
           `%;
-          padding-top:0!important;
-          margin-top:0!important;
+          ${sidebarConfig.hideTopMenu ? 'padding-top:0!important;margin-top:0!important;' : ''}
           }
         `;
       }
@@ -689,13 +691,13 @@ function createCSS(sidebarConfig: any, width: number) {
           `%;
             overflow:hidden;
             display:none;
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
           (100 - sidebarConfig.width.tablet) +
           `%;
-          padding-top:0!important;
-          margin-top:0!important;
+          ${sidebarConfig.hideTopMenu ? 'padding-top:0!important;margin-top:0!important;' : ''}
           }
         `;
       } else {
@@ -706,13 +708,13 @@ function createCSS(sidebarConfig: any, width: number) {
           sidebarConfig.width.tablet +
           `%;
             overflow:hidden;
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
           (100 - sidebarConfig.width.tablet) +
           `%;
-          padding-top:0!important;
-          margin-top:0!important;
+          ${sidebarConfig.hideTopMenu ? 'padding-top:0!important;margin-top:0!important;' : ''}
           }
         `;
       }
@@ -726,13 +728,13 @@ function createCSS(sidebarConfig: any, width: number) {
           `%;
             overflow:hidden;
             display:none;
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
           (100 - sidebarConfig.width.desktop) +
           `%;
-          padding-top:0!important;
-          margin-top:0!important;
+          ${sidebarConfig.hideTopMenu ? 'padding-top:0!important;margin-top:0!important;' : ''}
           }
         `;
       } else {
@@ -743,13 +745,13 @@ function createCSS(sidebarConfig: any, width: number) {
           sidebarConfig.width.desktop +
           `%;
             overflow:hidden;
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
           (100 - sidebarConfig.width.desktop) +
           `%;
-          padding-top:0!important;
-          margin-top:0!important;
+          ${sidebarConfig.hideTopMenu ? 'padding-top:0!important;margin-top:0!important;' : ''}
           }
         `;
       }
@@ -762,13 +764,13 @@ function createCSS(sidebarConfig: any, width: number) {
       sidebarWidth +
       `%;
         overflow:hidden;
+        ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
       } 
       #view {
         width:` +
       contentWidth +
       `%;
-      padding-top:0!important;
-      margin-top:0!important;
+      ${sidebarConfig.hideTopMenu ? 'padding-top:0!important;margin-top:0!important;' : ''}
       }
     `;
   }
