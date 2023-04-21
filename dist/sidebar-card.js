@@ -18062,6 +18062,7 @@ class SidebarCard extends LitElement {
         const sidebarInner = this.shadowRoot.querySelector('.sidebar-inner');
         const header = root.shadowRoot.querySelector('ch-header') || root.shadowRoot.querySelector('app-header');
         const offParam = getParameterByName('sidebarOff');
+        let headerHeightPx = getHeaderHeightPx();
         if (sidebarInner) {
             sidebarInner.style.width = this.offsetWidth + 'px';
             if (this.config.hideTopMenu) {
@@ -18069,8 +18070,8 @@ class SidebarCard extends LitElement {
                 sidebarInner.style.top = '0px';
             }
             else {
-                sidebarInner.style.height = `calc(${window.innerHeight}px - var(--header-height))`;
-                sidebarInner.style.top = 'var(--header-height)';
+                sidebarInner.style.height = `calc(${window.innerHeight}px - `+headerHeightPx+`)`;
+                sidebarInner.style.top = headerHeightPx;
             }
         }
     }
@@ -18425,6 +18426,8 @@ function createCSS(sidebarConfig, width) {
     let sidebarWidth = 25;
     let contentWidth = 75;
     let sidebarResponsive = false;
+	let headerHeightPx = getHeaderHeightPx();
+	
     if (sidebarConfig.width) {
         if (typeof sidebarConfig.width == 'number') {
             sidebarWidth = sidebarConfig.width;
@@ -18462,7 +18465,7 @@ function createCSS(sidebarConfig, width) {
                         `%;
             overflow:hidden;
             display:none;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18480,7 +18483,7 @@ function createCSS(sidebarConfig, width) {
                         sidebarConfig.width.mobile +
                         `%;
             overflow:hidden;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18501,7 +18504,7 @@ function createCSS(sidebarConfig, width) {
                         `%;
             overflow:hidden;
             display:none;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18519,7 +18522,7 @@ function createCSS(sidebarConfig, width) {
                         sidebarConfig.width.tablet +
                         `%;
             overflow:hidden;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18540,7 +18543,7 @@ function createCSS(sidebarConfig, width) {
                         `%;
             overflow:hidden;
             display:none;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18558,7 +18561,7 @@ function createCSS(sidebarConfig, width) {
                         sidebarConfig.width.desktop +
                         `%;
             overflow:hidden;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18578,7 +18581,7 @@ function createCSS(sidebarConfig, width) {
                 sidebarWidth +
                 `%;
         overflow:hidden;
-        ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(var(--header-height) + env(safe-area-inset-top));'}
+        ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
       } 
       #view {
         width:` +
@@ -18641,6 +18644,18 @@ function getRoot() {
     root = root && root.querySelector('hui-root');
     return root;
 }
+// return var(--header-height) from #view element
+// We need to take from the div#view element in case of "kiosk-mode" module installation that defined new CSS var(--header-height) as local new variable, not available in div#customSidebar
+function getHeaderHeightPx() {
+	let headerHeightPx = '0px';
+	const root = getRoot();
+    const view = root.shadowRoot.getElementById('view');
+	//debugger;
+	if(view!==undefined && window.getComputedStyle(view)!==undefined) {
+		headerHeightPx = window.getComputedStyle(view).marginTop;
+	}
+    return headerHeightPx;
+}
 // Returns the Home Assistant Sidebar element
 function getSidebar() {
     let sidebar = document.querySelector('home-assistant');
@@ -18694,13 +18709,14 @@ function updateStyling(appLayout, sidebarConfig) {
     log2console('updateStyling', hassFooter ? 'Home Assistant footer found!' : 'Home Assistant footer not found!');
     const offParam = getParameterByName('sidebarOff');
     const view = root.shadowRoot.getElementById('view');
+    let headerHeightPx = getHeaderHeightPx();
     if (sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && sidebarConfig.showTopMenuOnMobile && sidebarConfig.showTopMenuOnMobile === true && width <= sidebarConfig.breakpoints.mobile && offParam == null) {
         if (hassHeader) {
             log2console('updateStyling', 'Action: Show Home Assistant header!');
             hassHeader.style.display = 'block';
         }
         if (view) {
-            view.style.minHeight = 'calc(100vh - var(--header-height))';
+            view.style.minHeight = 'calc(100vh - '+headerHeightPx+')';
         }
         if (hassFooter) {
             log2console('updateStyling', 'Action: Show Home Assistant footer!');
