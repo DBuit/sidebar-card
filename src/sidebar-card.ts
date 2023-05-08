@@ -1025,6 +1025,7 @@ async function buildSidebar() {
         }
         if (appDrawerLayout) {
           appDrawerLayout.style.marginLeft = '0';
+          appDrawerLayout.style.paddingLeft = '0';
         }
         if (appDrawer) {
           appDrawer.style.display = 'none';
