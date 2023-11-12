@@ -846,7 +846,7 @@ function getHeaderHeightPx() {
     const view = root.shadowRoot.getElementById('view');
 	//debugger;
 	if(view!==undefined && window.getComputedStyle(view)!==undefined) {
-		headerHeightPx = window.getComputedStyle(view).marginTop;
+		headerHeightPx = window.getComputedStyle(view).paddingTop;
 	}
     return headerHeightPx;
 }
