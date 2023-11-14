@@ -18053,7 +18053,7 @@ class SidebarCard extends LitElement {
                 sidebarInner.style.top = '0px';
             }
             else {
-                sidebarInner.style.height = `calc(${window.innerHeight}px - `+headerHeightPx+`)`;
+                sidebarInner.style.height = `calc(${window.innerHeight}px - ` + headerHeightPx + `)`;
                 sidebarInner.style.top = headerHeightPx;
             }
         }
@@ -18225,6 +18225,7 @@ class SidebarCard extends LitElement {
         box-sizing: border-box;
         position: fixed;
         width: 0;
+        overflow-x: scroll;
       }
       .sidebarMenu {
         list-style: none;
@@ -18409,8 +18410,7 @@ function createCSS(sidebarConfig, width) {
     let sidebarWidth = 25;
     let contentWidth = 75;
     let sidebarResponsive = false;
-	let headerHeightPx = getHeaderHeightPx();
-	
+    let headerHeightPx = getHeaderHeightPx();
     if (sidebarConfig.width) {
         if (typeof sidebarConfig.width == 'number') {
             sidebarWidth = sidebarConfig.width;
@@ -18448,7 +18448,7 @@ function createCSS(sidebarConfig, width) {
                         `%;
             overflow:hidden;
             display:none;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(' + headerHeightPx + ' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18466,7 +18466,7 @@ function createCSS(sidebarConfig, width) {
                         sidebarConfig.width.mobile +
                         `%;
             overflow:hidden;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(' + headerHeightPx + ' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18487,7 +18487,7 @@ function createCSS(sidebarConfig, width) {
                         `%;
             overflow:hidden;
             display:none;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(' + headerHeightPx + ' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18505,7 +18505,7 @@ function createCSS(sidebarConfig, width) {
                         sidebarConfig.width.tablet +
                         `%;
             overflow:hidden;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(' + headerHeightPx + ' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18526,7 +18526,7 @@ function createCSS(sidebarConfig, width) {
                         `%;
             overflow:hidden;
             display:none;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(' + headerHeightPx + ' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18544,7 +18544,7 @@ function createCSS(sidebarConfig, width) {
                         sidebarConfig.width.desktop +
                         `%;
             overflow:hidden;
-            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
+            ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(' + headerHeightPx + ' + env(safe-area-inset-top));'}
           } 
           #view {
             width:` +
@@ -18564,7 +18564,7 @@ function createCSS(sidebarConfig, width) {
                 sidebarWidth +
                 `%;
         overflow:hidden;
-        ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc('+headerHeightPx+' + env(safe-area-inset-top));'}
+        ${sidebarConfig.hideTopMenu ? '' : 'margin-top: calc(' + headerHeightPx + ' + env(safe-area-inset-top));'}
       } 
       #view {
         width:` +
@@ -18630,13 +18630,13 @@ function getRoot() {
 // return var(--header-height) from #view element
 // We need to take from the div#view element in case of "kiosk-mode" module installation that defined new CSS var(--header-height) as local new variable, not available in div#customSidebar
 function getHeaderHeightPx() {
-	let headerHeightPx = '0px';
-	const root = getRoot();
+    let headerHeightPx = '0px';
+    const root = getRoot();
     const view = root.shadowRoot.getElementById('view');
-	//debugger;
-	if(view!==undefined && window.getComputedStyle(view)!==undefined) {
-		headerHeightPx = window.getComputedStyle(view).paddingTop;
-	}
+    //debugger;
+    if (view !== undefined && window.getComputedStyle(view) !== undefined) {
+        headerHeightPx = window.getComputedStyle(view).paddingTop;
+    }
     return headerHeightPx;
 }
 // Returns the Home Assistant Sidebar element
@@ -18699,7 +18699,7 @@ function updateStyling(appLayout, sidebarConfig) {
             hassHeader.style.display = 'block';
         }
         if (view) {
-            view.style.minHeight = 'calc(100vh - '+headerHeightPx+')';
+            view.style.minHeight = 'calc(100vh - ' + headerHeightPx + ')';
         }
         if (hassFooter) {
             log2console('updateStyling', 'Action: Show Home Assistant footer!');
