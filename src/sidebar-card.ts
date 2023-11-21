@@ -113,7 +113,7 @@ class SidebarCard extends LitElement {
           : html``}
         ${title
           ? html`
-              <h1>${title}</h1>
+              <h1 class="title">${title}</h1>
             `
           : html``}
         ${this.date
@@ -433,7 +433,7 @@ class SidebarCard extends LitElement {
         box-sizing: border-box;
         position: fixed;
         width: 0;
-        overflow-x: scroll;
+        overflow: hidden auto;
       }
       .sidebarMenu {
         list-style: none;
