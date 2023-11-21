@@ -17865,7 +17865,7 @@ var a=function(){try{(new Date).toLocaleDateString("i");}catch(e){return "RangeE
 // ###   Global constants
 // ##########################################################################################
 const SIDEBAR_CARD_TITLE = 'SIDEBAR-CARD';
-const SIDEBAR_CARD_VERSION = '0.1.8.4';
+const SIDEBAR_CARD_VERSION = '0.1.9.5.2';
 // ##########################################################################################
 // ###   The actual Sidebar Card element
 // ##########################################################################################
