@@ -282,7 +282,9 @@ class SidebarCard extends LitElement {
     window.addEventListener(
       'resize',
       function() {
-        self.updateSidebarSize(root);
+        setTimeout(() => {
+          self.updateSidebarSize(root);
+        }, 1);
       },
       true
     );
