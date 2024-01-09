@@ -60,6 +60,7 @@ Under sidebar you can configure the following options:
 | `showTopMenuOnMobile` | boolean | optional | `true` | If you hide the top menu you can set this to `true` so that it will be shown on mobile |
 | `breakpoints` | object | optional | see info below | For the width we set different sizes for different screens with breakpoints you can overwrite these breakpoints |
 | `sidebarMenu` | object | optional | see info below | Create a menu that can switch to different pages but also call any service you want |
+| `updateMenu` | boolean | optional | `true` | When false the active state of the sidebar will not change by navigating to a different view |
 | `template` | template | optional | see info below | Template rules that will show messages to inform you for example with how many lights are on |
 | `style` | css | optional | see info below | Overwrite some color variables or write your own styles |
 | `bottomCard` | object | optional | see info below | Define any card that will be rendered at the bottom of the sidebar |

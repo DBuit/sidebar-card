@@ -37,6 +37,7 @@ class SidebarCard extends LitElement {
   renderCard: any;
   templateLines: any = [];
   clock = false;
+  updateMenu = true;
   digitalClock = false;
   twelveHourVersion = false;
   digitalClockWithSeconds = false;
@@ -83,6 +84,7 @@ class SidebarCard extends LitElement {
     this.date = this.config.date ? this.config.date : false;
     this.dateFormat = this.config.dateFormat ? this.config.dateFormat : 'DD MMMM';
     this.bottomCard = this.config.bottomCard ? this.config.bottomCard : null;
+    this.updateMenu = this.config.updateMenu ? this.config.updateMenu : true;
 
     return html`
       ${addStyle
@@ -329,12 +331,14 @@ class SidebarCard extends LitElement {
   }
 
   _updateActiveMenu() {
-    this.shadowRoot.querySelectorAll('ul.sidebarMenu li[data-type="navigate"]').forEach((menuItem) => {
-      menuItem.classList.remove('active');
-    });
-    let activeEl = this.shadowRoot.querySelector('ul.sidebarMenu li[data-path="' + document.location.pathname + '"]');
-    if (activeEl) {
-      activeEl.classList.add('active');
+    if(this.updateMenu) {
+      this.shadowRoot.querySelectorAll('ul.sidebarMenu li[data-type="navigate"]').forEach((menuItem) => {
+        menuItem.classList.remove('active');
+      });
+      let activeEl = this.shadowRoot.querySelector('ul.sidebarMenu li[data-path="' + document.location.pathname + '"]');
+      if (activeEl) {
+        activeEl.classList.add('active');
+      }
     }
   }
 
