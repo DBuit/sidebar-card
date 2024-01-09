@@ -9,7 +9,7 @@
 // ##########################################################################################
 
 const SIDEBAR_CARD_TITLE = 'SIDEBAR-CARD';
-const SIDEBAR_CARD_VERSION = '0.1.9.5.2';
+const SIDEBAR_CARD_VERSION = '0.1.9.6';
 
 // ##########################################################################################
 // ###   Import dependencies
@@ -84,7 +84,7 @@ class SidebarCard extends LitElement {
     this.date = this.config.date ? this.config.date : false;
     this.dateFormat = this.config.dateFormat ? this.config.dateFormat : 'DD MMMM';
     this.bottomCard = this.config.bottomCard ? this.config.bottomCard : null;
-    this.updateMenu = this.config.updateMenu ? this.config.updateMenu : true;
+    this.updateMenu = this.config.hasOwnProperty('updateMenu') ? this.config.updateMenu : true;
 
     return html`
       ${addStyle
