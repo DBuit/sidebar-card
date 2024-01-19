@@ -146,7 +146,7 @@ class SidebarCard extends LitElement {
               <ul class="template">
                 ${this.templateLines.map((line) => {
                   return html`
-                    <li>${line}</li>
+                    ${createElementFromHTML(line)}
                   `;
                 })}
               </ul>
@@ -394,9 +394,8 @@ class SidebarCard extends LitElement {
       subscribeRenderTemplate(
         null,
         (res) => {
-          this.templateLines = res.match(/<li>([^]*?)<\/li>/g).map(function (val) {
-            return val.replace(/<\/?li>/g, '');
-          });
+          const regex = /<(?:li|div)(?:\s+(?:class|id)\s*=\s*"([^"]*)")*\s*>([^<]*)<\/(?:li|div)>/g
+          this.templateLines = res.match(regex).map( (val) => val);
           this.requestUpdate();
         },
         {
@@ -1021,6 +1020,12 @@ async function getConfig() {
   }
 
   return lovelace;
+}
+
+function createElementFromHTML(htmlString: string) {
+  const div = document.createElement('div');
+  div.innerHTML = htmlString.trim();
+  return div.firstChild;
 }
 
 // ##########################################################################################
