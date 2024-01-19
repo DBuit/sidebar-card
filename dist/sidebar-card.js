@@ -2560,14 +2560,13 @@ function provideHass(element) {
 
   return undefined;
 }
-
 function lovelace_view() {
   var root = document.querySelector("hc-main");
   if(root) {
     root = root && root.shadowRoot;
     root = root && root.querySelector("hc-lovelace");
     root = root && root.shadowRoot;
-    root = root && root.querySelector("hui-view");
+    root = root && root.querySelector("hui-view") || root.querySelector("hui-panel-view");
     return root;
   }
 
@@ -2581,7 +2580,8 @@ function lovelace_view() {
   root = root && root.shadowRoot;
   root = root && root.querySelector("hui-root");
   root = root && root.shadowRoot;
-  root = root && root.querySelector("ha-app-layout #view");
+  root = root && root.querySelector("ha-app-layout");
+  root = root && root.querySelector("#view");
   root = root && root.firstElementChild;
   return root;
 }
@@ -2601,28 +2601,82 @@ function fireEvent(ev, detail, entity=null) {
   }
 }
 
-function moreInfo(entity, large=false) {
-  const root = document.querySelector("hc-main") || document.querySelector("home-assistant");
-  fireEvent("hass-more-info", {entityId: entity}, root);
-  const el = root._moreInfoEl;
-  el.large = large;
+async function _selectTree(root, path, all=false) {
+  let el = root;
+  if(typeof(path) === "string") {
+    path = path.split(/(\$| )/);
+  }
+  for(const [i, p] of path.entries()) {
+    if(!p.trim().length) continue;
+    if(!el) return null;
+    if(el.localName && el.localName.includes("-"))
+      await customElements.whenDefined(el.localName);
+    if(el.updateComplete)
+      await el.updateComplete;
+    if(p === "$")
+      if(all && i == path.length-1)
+        el = [el.shadowRoot];
+      else
+        el = el.shadowRoot;
+    else
+      if(all && i == path.length-1)
+        el = el.querySelectorAll(p);
+      else
+        el = el.querySelector(p);
+  }
   return el;
 }
 
+async function selectTree(root, path, all=false, timeout=10000) {
+  return Promise.race([
+    _selectTree(root, path, all),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeout))
+  ]).catch((err) => {
+    if(!err.message || err.message !== "timeout")
+      throw(err);
+    return null;
+  });
+}
+
+async function moreInfo(entity, large=false) {
+  const root = document.querySelector("hc-main") || document.querySelector("home-assistant");
+  fireEvent("hass-more-info", {entityId: entity}, root);
+  const el = await selectTree(root, "$ ha-more-info-dialog");
+  if(el)
+    el.large = large;
+  return el;
+}
+
+const ID_STORAGE_KEY = 'lovelace-player-device-id';
 function _deviceID() {
-  const ID_STORAGE_KEY = 'lovelace-player-device-id';
-  if(window['fully'] && typeof fully.getDeviceId === "function")
-    return fully.getDeviceId();
   if(!localStorage[ID_STORAGE_KEY])
   {
     const s4 = () => {
       return Math.floor((1+Math.random())*100000).toString(16).substring(1);
     };
-    localStorage[ID_STORAGE_KEY] = `${s4()}${s4()}-${s4()}${s4()}`;
+    if(window['fully'] && typeof fully.getDeviceId === "function")
+      localStorage[ID_STORAGE_KEY] = fully.getDeviceId();
+    else
+      localStorage[ID_STORAGE_KEY] = `${s4()}${s4()}-${s4()}${s4()}`;
   }
   return localStorage[ID_STORAGE_KEY];
 }
 let deviceID = _deviceID();
+
+const setDeviceID = (id) => {
+  if(id === null) return;
+  if(id === "clear") {
+    localStorage.removeItem(ID_STORAGE_KEY);
+  } else {
+    localStorage[ID_STORAGE_KEY] = id;
+  }
+  deviceID = _deviceID();
+};
+
+const params = new URLSearchParams(window.location.search);
+if(params.get('deviceID')) {
+  setDeviceID(params.get('deviceID'));
+}
 
 function subscribeRenderTemplate(conn, onChange, params) {
   // params = {template, entity_ids, variables}
@@ -17919,7 +17973,7 @@ class SidebarCard extends LitElement {
               <ul class="template">
                 ${this.templateLines.map((line) => {
                 return html `
-                    ${createElementFromHTML(line)}
+                    <li>${line}</li>
                   `;
             })}
               </ul>
@@ -18153,8 +18207,9 @@ class SidebarCard extends LitElement {
         this.config = config;
         if (this.config.template) {
             subscribeRenderTemplate(null, (res) => {
-                const regex = /<(?:li|div)(?:\s+(?:class|id)\s*=\s*"([^"]*)")*\s*>([^<]*)<\/(?:li|div)>/g;
-                this.templateLines = res.match(regex).map((val) => val);
+                this.templateLines = res.match(/<li>([^]*?)<\/li>/g).map(function (val) {
+                    return val.replace(/<\/?li>/g, '');
+                });
                 this.requestUpdate();
             }, {
                 template: this.config.template,
@@ -18752,11 +18807,6 @@ async function getConfig() {
         }
     }
     return lovelace;
-}
-function createElementFromHTML(htmlString) {
-    const div = document.createElement('div');
-    div.innerHTML = htmlString.trim();
-    return div.firstChild;
 }
 // ##########################################################################################
 // ###   The Sidebar Card code base initialisation
