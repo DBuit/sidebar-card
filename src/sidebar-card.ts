@@ -1024,6 +1024,12 @@ async function getConfig() {
   return lovelace;
 }
 
+function createElementFromHTML(htmlString: string) {
+  const div = document.createElement('div');
+  div.innerHTML = htmlString.trim();
+  return div.firstChild;
+}
+
 // ##########################################################################################
 // ###   The Sidebar Card code base initialisation
 // ##########################################################################################
