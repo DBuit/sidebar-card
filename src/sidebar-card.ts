@@ -146,7 +146,7 @@ class SidebarCard extends LitElement {
               <ul class="template">
                 ${this.templateLines.map((line) => {
                   return html`
-                    <li>${line}</li>
+                    ${createElementFromHTML(line)}
                   `;
                 })}
               </ul>
