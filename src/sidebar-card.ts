@@ -394,10 +394,8 @@ class SidebarCard extends LitElement {
       subscribeRenderTemplate(
         null,
         (res) => {
-          this.templateLines = res.match(/<li(?:\s+class="([^"]*)")?>([^<]*)<\/li>/g).map(function (val) {
-            const regex = /(?!<\/?li(?:\s+class="[^"]*")?>)(<li(?:\s+class="[^"]*")?>.*?<\/li>)/g
-            return val.replace(regex, '');
-          });
+          console.log(this.config.template);
+          this.templateLines = res.match(/<li(?:\s+(?:class|id)\s*=\s*"([^"]*)")*\s*>([^<]*)<\/li>/g).map( (val) => val);
           this.requestUpdate();
         },
         {
