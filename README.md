@@ -57,6 +57,7 @@ Under sidebar you can configure the following options:
 | `width` | object | optional | see info below | The width of the sidebar in percentages for different screens |
 | `hideTopMenu` | boolean | optional | `true` | Hide the top home assistant menu |
 | `hideHassSidebar` | boolean | optional | `true` | Hide the home assistant sidebar |
+| `dockHassSidebar` | boolean | optional | `true` | Docks the home assistant sidebar |
 | `showTopMenuOnMobile` | boolean | optional | `true` | If you hide the top menu you can set this to `true` so that it will be shown on mobile |
 | `breakpoints` | object | optional | see info below | For the width we set different sizes for different screens with breakpoints you can overwrite these breakpoints |
 | `sidebarMenu` | object | optional | see info below | Create a menu that can switch to different pages but also call any service you want |
