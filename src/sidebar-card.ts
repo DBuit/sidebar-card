@@ -9,7 +9,7 @@
 // ##########################################################################################
 
 const SIDEBAR_CARD_TITLE = 'SIDEBAR-CARD';
-const SIDEBAR_CARD_VERSION = '0.1.9.6.1';
+const SIDEBAR_CARD_VERSION = '0.1.9.6.2';
 
 // ##########################################################################################
 // ###   Import dependencies
@@ -1041,6 +1041,7 @@ async function buildSidebar() {
       const hassSidebar = getSidebar();
       const appDrawerLayout = getAppDrawerLayout();
       const appDrawer = getAppDrawer();
+      const hassHeader = root.shadowRoot.querySelector('.header');
       const offParam = getParameterByName('sidebarOff');
 
       if (sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && offParam == null) {
@@ -1060,6 +1061,17 @@ async function buildSidebar() {
         if (appDrawer) {
           appDrawer.style.display = 'none';
         }
+        if(hassHeader) {
+          hassHeader.style.width = "100%";
+        }
+      }
+      if (sidebarConfig.dockHassSidebar && sidebarConfig.dockHassSidebar === true && offParam == null) {
+        const event = new Event("hass-dock-sidebar", {
+          bubbles: true,
+          composed: true,
+        });
+        (event as any).detail = {dock: "always_hidden"}; 
+        document.querySelector('home-assistant')?.dispatchEvent(event);
       }
       if (!sidebarConfig.breakpoints) {
         sidebarConfig.breakpoints = {
