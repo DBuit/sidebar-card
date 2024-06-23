@@ -1041,6 +1041,7 @@ async function buildSidebar() {
       const hassSidebar = getSidebar();
       const appDrawerLayout = getAppDrawerLayout();
       const appDrawer = getAppDrawer();
+      const hassHeader = root.shadowRoot.querySelector('.header');
       const offParam = getParameterByName('sidebarOff');
 
       if (sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && offParam == null) {
@@ -1059,6 +1060,9 @@ async function buildSidebar() {
         }
         if (appDrawer) {
           appDrawer.style.display = 'none';
+        }
+        if(hassHeader) {
+          hassHeader.style.width = "100%";
         }
       }
       if (!sidebarConfig.breakpoints) {
