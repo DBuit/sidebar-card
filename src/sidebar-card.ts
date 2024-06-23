@@ -1065,6 +1065,14 @@ async function buildSidebar() {
           hassHeader.style.width = "100%";
         }
       }
+      if (sidebarConfig.dockHassSidebar && sidebarConfig.dockHassSidebar === true && offParam == null) {
+        const event = new Event("hass-dock-sidebar", {
+          bubbles: true,
+          composed: true,
+        });
+        (event as any).detail = {dock: "always_hidden"}; 
+        document.querySelector('home-assistant')?.dispatchEvent(event);
+      }
       if (!sidebarConfig.breakpoints) {
         sidebarConfig.breakpoints = {
           tablet: 1024,
