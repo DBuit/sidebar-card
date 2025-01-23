@@ -54,6 +54,7 @@ Under sidebar you can configure the following options:
 | `period` | boolean | optional | `false` | If twelveHourVersion is enabled you can enable this to show 'AM' or 'PM' |
 | `date` | boolean | optional | `false` | If date is enabled it will display the current date |
 | `dateFormat` | boolean | string | `DD MMMM` | If date is enabled you define how it should show the date with dateFormat, to see the options check this url: https://momentjs.com/docs/#/parsing/string-format/ |
+| `showRight` | boolean | optional | `false` | If showRight is enabled the sidebar will be shown on the right side of the screen |
 | `width` | object | optional | see info below | The width of the sidebar in percentages for different screens |
 | `hideTopMenu` | boolean | optional | `true` | Hide the top home assistant menu |
 | `hideHassSidebar` | boolean | optional | `true` | Hide the home assistant sidebar |

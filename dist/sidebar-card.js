@@ -18867,8 +18867,13 @@ async function buildSidebar() {
             // move el into wrapper
             let sidebar = document.createElement('div');
             sidebar.setAttribute('id', 'customSidebar');
-            wrapper.appendChild(sidebar);
-            wrapper.appendChild(contentContainer);
+            if (sidebarConfig.showRight) {
+                wrapper.appendChild(contentContainer);
+                wrapper.appendChild(sidebar);
+            } else {
+                wrapper.appendChild(sidebar);
+                wrapper.appendChild(contentContainer);
+            }
             await buildCard(sidebar, sidebarConfig);
             //updateStyling(appLayout, sidebarConfig);
             subscribeEvents(appLayout, sidebarConfig, contentContainer, sidebar);
