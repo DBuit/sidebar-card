@@ -1,0 +1,44 @@
+{
+  "name": "rollup-plugin-serve",
+  "version": "1.1.1",
+  "description": "Serve your rolled up bundle",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "jsnext:main": "dist/index.es.js",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -cw",
+    "lint": "standard --fix rollup.config.js src/**",
+    "prepare": "yarn lint && yarn build",
+    "test": "cd test && rollup -cw || cd .."
+  },
+  "keywords": [
+    "rollup",
+    "rollup-plugin",
+    "serve",
+    "dev-server",
+    "static"
+  ],
+  "license": "MIT",
+  "author": "Thomas Ghysels <info@thomasg.be>",
+  "homepage": "https://github.com/thgh/rollup-plugin-serve",
+  "bugs": {
+    "url": "https://github.com/thgh/rollup-plugin-serve/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thgh/rollup-plugin-serve"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "mime": "^2",
+    "opener": "1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-buble": "0.21.3",
+    "rollup": "2",
+    "standard": "14"
+  }
+}

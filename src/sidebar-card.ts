@@ -9,7 +9,7 @@
 // ##########################################################################################
 
 const SIDEBAR_CARD_TITLE = 'SIDEBAR-CARD';
-const SIDEBAR_CARD_VERSION = '0.1.9.6.1';
+const SIDEBAR_CARD_VERSION = '0.1.9.7.0';
 
 // ##########################################################################################
 // ###   Import dependencies
@@ -47,6 +47,14 @@ class SidebarCard extends LitElement {
   bottomCard: any = null;
   CUSTOM_TYPE_PREFIX = 'custom:';
 
+  // Markus:
+  // Stores the setInterval handle for the periodic clock update
+  // Stores the setInterval handle for the periodic date update
+  // Stores the bound event handler function for the 'location-changed' event, used to update the active menu item with the correct `this` context
+  _clockInterval: any = null;
+  _dateInterval: any = null;
+  _boundLocationChange: any;
+
   /* **************************************** *
    *        Element's public properties       *
    * **************************************** */
@@ -63,8 +71,45 @@ class SidebarCard extends LitElement {
    *           Element constructor            *
    * **************************************** */
 
+  //Markus:
+  // Binds the location change handler to update the active menu item with a short delay
   constructor() {
     super();
+    this._boundLocationChange = () => {
+        setTimeout(() => this._updateActiveMenu(), 50);
+    };
+  }  
+  
+  connectedCallback() {
+    super.connectedCallback();
+    //Markus:
+    // Starts the observer for URL changes
+    window.addEventListener('location-changed', this._boundLocationChange);
+    
+    //Markus:
+    // Executes logic when the card is first connected
+    if(this._clockInterval) this._runClock();
+    if(this._dateInterval) this._runDate();
+    this._updateActiveMenu();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+
+    // Markus:
+     // Stops the observer for URL changes to prevent memory leaks
+    window.removeEventListener('location-changed', this._boundLocationChange);
+
+    // Markus:
+    // Stops the timers for date and clock when the card is no longer visible
+    if (this._dateInterval) {
+      clearInterval(this._dateInterval);
+      this._dateInterval = null;
+    }
+    if (this._clockInterval) {
+      clearInterval(this._clockInterval);
+      this._clockInterval = null;
+    }
   }
 
   /* **************************************** *
@@ -255,27 +300,36 @@ class SidebarCard extends LitElement {
   firstUpdated() {
     provideHass(this);
     let root = getRoot();
+
+    // Markus:
+    // new function _boundLocationChange will be used instead
+    /*
     root.shadowRoot.querySelectorAll('paper-tab').forEach((paperTab) => {
       log2console('firstUpdated', 'Menu item found');
       paperTab.addEventListener('click', () => {
         this._updateActiveMenu();
       });
     });
+    */
+
     const self = this;
     if (this.clock || this.digitalClock) {
       const inc = 1000;
       self._runClock();
-      setInterval(function() {
+      // Stores the interval ID for the periodic clock update
+      this._clockInterval = setInterval(function() {
         self._runClock();
       }, inc);
     }
     if (this.date) {
       const inc = 1000 * 60 * 60;
       self._runDate();
-      setInterval(function() {
+      // Stores the interval ID for the periodic date update
+      this._dateInterval = setInterval(function() {
         self._runDate();
       }, inc);
     }
+
 
     setTimeout(() => {
       self.updateSidebarSize(root);
@@ -348,7 +402,9 @@ class SidebarCard extends LitElement {
     if ((e.target.dataset && e.target.dataset.menuitem) || (e.target.parentNode.dataset && e.target.parentNode.dataset.menuitem)) {
       const menuItem = JSON.parse(e.target.dataset.menuitem || e.target.parentNode.dataset.menuitem);
       this._customAction(menuItem);
-      this._updateActiveMenu();
+      // Markus:
+      // This line is commented out because the menu update is now triggered by the 'location-changed' event
+      //this._updateActiveMenu();
     }
   }
 
