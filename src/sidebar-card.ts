@@ -330,11 +330,27 @@ class SidebarCard extends LitElement {
       }, inc);
     }
 
-
+    // Markus
+    // Fix for a race condition where the sidebar's width might be calculated
+    // before the parent container has a stable layout. The first setTimeout
+    // attempts an initial sizing, while the second, delayed call serves as a
+    // correction after the page has fully rendered.
+   /*
     setTimeout(() => {
       self.updateSidebarSize(root);
       self._updateActiveMenu();
     }, 1);
+   */  
+    
+    setTimeout(() => {
+      self.updateSidebarSize(root);
+      self._updateActiveMenu();
+    }, 50); 
+
+    setTimeout(() => {
+      self.updateSidebarSize(root);
+    }, 350);
+
     window.addEventListener(
       'resize',
       function() {
