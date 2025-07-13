@@ -8,42 +8,36 @@ import json from '@rollup/plugin-json';
 
 const dev = process.env.ROLLUP_WATCH;
 
-const serveopts = {
-  contentBase: ['./dist'],
-  host: '0.0.0.0',
-  port: 5005,
-  allowCrossOrigin: true,
-  headers: {
-    'Access-Control-Allow-Origin': '*',
-  },
-  sourcemap: false
-};
-
 const plugins = [
-  nodeResolve({sourcemap: false}),
-  commonjs({sourcemap: false}),
+  nodeResolve(),
+  commonjs(),
   typescript({
-    sourcemap: false,
     typescript: require('typescript'),
-    objectHashIgnoreUnknownHack: true
+    objectHashIgnoreUnknownHack: true,
+    tsconfigOverride: { compilerOptions: { sourceMap: false } },
   }),
-  json({sourcemap: false}),
+  json(),
   babel({
     exclude: 'node_modules/**',
-    sourcemap: false
   }),
-  dev && serve(serveopts),
-  !dev && terser(),
-];
-
-export default [
-  {
-    input: 'src/sidebar-card.ts',
-    output: {
-      dir: 'dist',
-      format: 'es',
-      sourcemap: false
+  dev && serve({
+    contentBase: ['./dist'],
+    host: '0.0.0.0',
+    port: 5005,
+    allowCrossOrigin: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
     },
-    plugins: [...plugins],
+  }),
+  !dev && terser(),
+].filter(Boolean);
+
+export default {
+  input: 'src/sidebar-card.ts',
+  output: {
+    dir: 'dist',
+    format: 'es',
+    sourcemap: false,
   },
-];
+  plugins,
+};
