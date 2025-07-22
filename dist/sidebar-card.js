@@ -659,4 +659,4 @@ s.defineLocale("zh-tw",{months:"一月_二月_三月_四月_五月_六月_七月
         display: flex;
         margin-top: auto;
       }
-    `}}),console.info(`%c  ${ke.padEnd(24)}%c\n  Version: ${"0.1.9.7.0".padEnd(9)}      `,"color: chartreuse; background: black; font-weight: 700;","color: white; background: dimgrey; font-weight: 700;"),Pe(),setTimeout(()=>{window.addEventListener("location-changed",()=>{const e=ve();if(!e)return;const t=e.shadowRoot.querySelector("div").querySelector("#customSidebarWrapper");t&&t.querySelector("#customSidebar")||Pe()})},1e3);
+    `}}),console.info(`%c  ${ke.padEnd(24)}%c\n  Version: ${"0.1.9.8.0".padEnd(9)}      `,"color: chartreuse; background: black; font-weight: 700;","color: white; background: dimgrey; font-weight: 700;"),Pe(),setTimeout(()=>{window.addEventListener("location-changed",()=>{const e=ve();if(!e)return;const t=e.shadowRoot.querySelector("div").querySelector("#customSidebarWrapper");t&&t.querySelector("#customSidebar")||Pe()})},1e3);
