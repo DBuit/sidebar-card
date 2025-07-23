@@ -81,33 +81,32 @@ class SidebarCard extends LitElement {
   }  
   
   connectedCallback() {
-    super.connectedCallback();
-    // Starts the observer for URL changes
-    window.addEventListener('location-changed', this._boundLocationChange);
-    
-    // --- FIX START ---
-    // Start timers if they are configured and not already running.
-    // This ensures they restart every time the card is re-connected to the DOM.
-    if ((this.config.clock || this.config.digitalClock) && !this._clockInterval) {
+      super.connectedCallback();
+      // Starts the observer for URL changes
+      window.addEventListener('location-changed', this._boundLocationChange);
+      
       const self = this;
-      const inc = 1000;
-      self._runClock(); // Run once immediately
-      this._clockInterval = setInterval(function() {
-        self._runClock();
-      }, inc);
-    }
-    if (this.config.date && !this._dateInterval) {
-      const self = this;
-      const inc = 1000 * 60 * 60;
-      self._runDate(); // Run once immediately
-      this._dateInterval = setInterval(function() {
-        self._runDate();
-      }, inc);
-    }
-    // --- FIX END ---
 
-    this._updateActiveMenu();
-  }
+      // Start timers if they are configured and not already running.
+      if ((this.config.clock || this.config.digitalClock) && !this._clockInterval) {
+        const inc = 1000;
+        // Delay the first run slightly to ensure the DOM is ready.
+        setTimeout(() => self._runClock(), 50);
+        this._clockInterval = setInterval(function() {
+          self._runClock();
+        }, inc);
+      }
+      if (this.config.date && !this._dateInterval) {
+        const inc = 1000 * 60 * 60;
+        // Delay the first run slightly to ensure the DOM is ready.
+        setTimeout(() => self._runDate(), 50);
+        this._dateInterval = setInterval(function() {
+          self._runDate();
+        }, inc);
+      }
+
+      this._updateActiveMenu();
+    }
 
   /* **************************************** *
    *   Element's HTML renderer (lit-element)  *

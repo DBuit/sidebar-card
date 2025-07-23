@@ -17542,26 +17542,24 @@ class SidebarCard extends LitElement {
         super.connectedCallback();
         // Starts the observer for URL changes
         window.addEventListener('location-changed', this._boundLocationChange);
-        // --- FIX START ---
+        const self = this;
         // Start timers if they are configured and not already running.
-        // This ensures they restart every time the card is re-connected to the DOM.
         if ((this.config.clock || this.config.digitalClock) && !this._clockInterval) {
-            const self = this;
             const inc = 1000;
-            self._runClock(); // Run once immediately
+            // Delay the first run slightly to ensure the DOM is ready.
+            setTimeout(() => self._runClock(), 50);
             this._clockInterval = setInterval(function () {
                 self._runClock();
             }, inc);
         }
         if (this.config.date && !this._dateInterval) {
-            const self = this;
             const inc = 1000 * 60 * 60;
-            self._runDate(); // Run once immediately
+            // Delay the first run slightly to ensure the DOM is ready.
+            setTimeout(() => self._runDate(), 50);
             this._dateInterval = setInterval(function () {
                 self._runDate();
             }, inc);
         }
-        // --- FIX END ---
         this._updateActiveMenu();
     }
     /* **************************************** *
