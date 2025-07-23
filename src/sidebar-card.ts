@@ -82,34 +82,31 @@ class SidebarCard extends LitElement {
   
   connectedCallback() {
     super.connectedCallback();
-    //Markus:
     // Starts the observer for URL changes
     window.addEventListener('location-changed', this._boundLocationChange);
     
-    //Markus:
-    // Executes logic when the card is first connected
-    if(this._clockInterval) this._runClock();
-    if(this._dateInterval) this._runDate();
+    // --- FIX START ---
+    // Start timers if they are configured and not already running.
+    // This ensures they restart every time the card is re-connected to the DOM.
+    if ((this.config.clock || this.config.digitalClock) && !this._clockInterval) {
+      const self = this;
+      const inc = 1000;
+      self._runClock(); // Run once immediately
+      this._clockInterval = setInterval(function() {
+        self._runClock();
+      }, inc);
+    }
+    if (this.config.date && !this._dateInterval) {
+      const self = this;
+      const inc = 1000 * 60 * 60;
+      self._runDate(); // Run once immediately
+      this._dateInterval = setInterval(function() {
+        self._runDate();
+      }, inc);
+    }
+    // --- FIX END ---
+
     this._updateActiveMenu();
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-
-    // Markus:
-     // Stops the observer for URL changes to prevent memory leaks
-    window.removeEventListener('location-changed', this._boundLocationChange);
-
-    // Markus:
-    // Stops the timers for date and clock when the card is no longer visible
-    if (this._dateInterval) {
-      clearInterval(this._dateInterval);
-      this._dateInterval = null;
-    }
-    if (this._clockInterval) {
-      clearInterval(this._clockInterval);
-      this._clockInterval = null;
-    }
   }
 
   /* **************************************** *
@@ -301,22 +298,13 @@ class SidebarCard extends LitElement {
     provideHass(this);
     let root = getRoot();
 
-    // Markus:
-    // new function _boundLocationChange will be used instead
+    // The clock and date interval logic is now moved to connectedCallback()
+    // to handle reloads correctly. This section can be removed.
     /*
-    root.shadowRoot.querySelectorAll('paper-tab').forEach((paperTab) => {
-      log2console('firstUpdated', 'Menu item found');
-      paperTab.addEventListener('click', () => {
-        this._updateActiveMenu();
-      });
-    });
-    */
-
     const self = this;
     if (this.clock || this.digitalClock) {
       const inc = 1000;
       self._runClock();
-      // Stores the interval ID for the periodic clock update
       this._clockInterval = setInterval(function() {
         self._runClock();
       }, inc);
@@ -324,23 +312,13 @@ class SidebarCard extends LitElement {
     if (this.date) {
       const inc = 1000 * 60 * 60;
       self._runDate();
-      // Stores the interval ID for the periodic date update
       this._dateInterval = setInterval(function() {
         self._runDate();
       }, inc);
     }
-
-    // Markus
-    // Fix for a race condition where the sidebar's width might be calculated
-    // before the parent container has a stable layout. The first setTimeout
-    // attempts an initial sizing, while the second, delayed call serves as a
-    // correction after the page has fully rendered.
-   /*
-    setTimeout(() => {
-      self.updateSidebarSize(root);
-      self._updateActiveMenu();
-    }, 1);
-   */  
+    */
+   
+    const self = this; // self is needed for the setTimeouts below
     
     setTimeout(() => {
       self.updateSidebarSize(root);
