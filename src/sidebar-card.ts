@@ -1091,13 +1091,22 @@ async function buildSidebar() {
       const appDrawerLayout = getAppDrawerLayout();
       const appDrawer = getAppDrawer();
       const offParam = getParameterByName('sidebarOff');
+    
+      // SAFETY CHECK: Only continue if root and shadowRoot are valid
+      if (!root || !root.shadowRoot) {
+        // Prevents crash if Home Assistant UI root or its shadowRoot is not ready
+        error2console('buildSidebar', 'Root element or shadowRoot not found!');
+        return;
+      }
 
+      // Now safe to access shadowRoot
       if (sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && offParam == null) {
         if (root.shadowRoot.querySelector('ch-header')) root.shadowRoot.querySelector('ch-header').style.display = 'none';
         if (root.shadowRoot.querySelector('app-header')) root.shadowRoot.querySelector('app-header').style.display = 'none';
         if (root.shadowRoot.querySelector('ch-footer')) root.shadowRoot.querySelector('ch-footer').style.display = 'none';
         if (root.shadowRoot.getElementById('view')) root.shadowRoot.getElementById('view').style.minHeight = 'calc(100vh)';
       }
+
       if (sidebarConfig.hideHassSidebar && sidebarConfig.hideHassSidebar === true && offParam == null) {
         if (hassSidebar) {
           hassSidebar.style.display = 'none';
