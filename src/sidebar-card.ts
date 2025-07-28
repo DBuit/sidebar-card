@@ -81,36 +81,32 @@ class SidebarCard extends LitElement {
   }  
   
   connectedCallback() {
-    super.connectedCallback();
-    //Markus:
-    // Starts the observer for URL changes
-    window.addEventListener('location-changed', this._boundLocationChange);
-    
-    //Markus:
-    // Executes logic when the card is first connected
-    if(this._clockInterval) this._runClock();
-    if(this._dateInterval) this._runDate();
-    this._updateActiveMenu();
-  }
+      super.connectedCallback();
+      // Starts the observer for URL changes
+      window.addEventListener('location-changed', this._boundLocationChange);
+      
+      const self = this;
 
-  disconnectedCallback() {
-    super.disconnectedCallback();
+      // Start timers if they are configured and not already running.
+      if ((this.config.clock || this.config.digitalClock) && !this._clockInterval) {
+        const inc = 1000;
+        // Delay the first run slightly to ensure the DOM is ready.
+        setTimeout(() => self._runClock(), 50);
+        this._clockInterval = setInterval(function() {
+          self._runClock();
+        }, inc);
+      }
+      if (this.config.date && !this._dateInterval) {
+        const inc = 1000 * 60 * 60;
+        // Delay the first run slightly to ensure the DOM is ready.
+        setTimeout(() => self._runDate(), 50);
+        this._dateInterval = setInterval(function() {
+          self._runDate();
+        }, inc);
+      }
 
-    // Markus:
-     // Stops the observer for URL changes to prevent memory leaks
-    window.removeEventListener('location-changed', this._boundLocationChange);
-
-    // Markus:
-    // Stops the timers for date and clock when the card is no longer visible
-    if (this._dateInterval) {
-      clearInterval(this._dateInterval);
-      this._dateInterval = null;
+      this._updateActiveMenu();
     }
-    if (this._clockInterval) {
-      clearInterval(this._clockInterval);
-      this._clockInterval = null;
-    }
-  }
 
   /* **************************************** *
    *   Element's HTML renderer (lit-element)  *
@@ -301,22 +297,13 @@ class SidebarCard extends LitElement {
     provideHass(this);
     let root = getRoot();
 
-    // Markus:
-    // new function _boundLocationChange will be used instead
+    // The clock and date interval logic is now moved to connectedCallback()
+    // to handle reloads correctly. This section can be removed.
     /*
-    root.shadowRoot.querySelectorAll('paper-tab').forEach((paperTab) => {
-      log2console('firstUpdated', 'Menu item found');
-      paperTab.addEventListener('click', () => {
-        this._updateActiveMenu();
-      });
-    });
-    */
-
     const self = this;
     if (this.clock || this.digitalClock) {
       const inc = 1000;
       self._runClock();
-      // Stores the interval ID for the periodic clock update
       this._clockInterval = setInterval(function() {
         self._runClock();
       }, inc);
@@ -324,23 +311,13 @@ class SidebarCard extends LitElement {
     if (this.date) {
       const inc = 1000 * 60 * 60;
       self._runDate();
-      // Stores the interval ID for the periodic date update
       this._dateInterval = setInterval(function() {
         self._runDate();
       }, inc);
     }
-
-    // Markus
-    // Fix for a race condition where the sidebar's width might be calculated
-    // before the parent container has a stable layout. The first setTimeout
-    // attempts an initial sizing, while the second, delayed call serves as a
-    // correction after the page has fully rendered.
-   /*
-    setTimeout(() => {
-      self.updateSidebarSize(root);
-      self._updateActiveMenu();
-    }, 1);
-   */  
+    */
+   
+    const self = this; // self is needed for the setTimeouts below
     
     setTimeout(() => {
       self.updateSidebarSize(root);
@@ -1114,13 +1091,22 @@ async function buildSidebar() {
       const appDrawerLayout = getAppDrawerLayout();
       const appDrawer = getAppDrawer();
       const offParam = getParameterByName('sidebarOff');
+    
+      // SAFETY CHECK: Only continue if root and shadowRoot are valid
+      if (!root || !root.shadowRoot) {
+        // Prevents crash if Home Assistant UI root or its shadowRoot is not ready
+        error2console('buildSidebar', 'Root element or shadowRoot not found!');
+        return;
+      }
 
+      // Now safe to access shadowRoot
       if (sidebarConfig.hideTopMenu && sidebarConfig.hideTopMenu === true && offParam == null) {
         if (root.shadowRoot.querySelector('ch-header')) root.shadowRoot.querySelector('ch-header').style.display = 'none';
         if (root.shadowRoot.querySelector('app-header')) root.shadowRoot.querySelector('app-header').style.display = 'none';
         if (root.shadowRoot.querySelector('ch-footer')) root.shadowRoot.querySelector('ch-footer').style.display = 'none';
         if (root.shadowRoot.getElementById('view')) root.shadowRoot.getElementById('view').style.minHeight = 'calc(100vh)';
       }
+
       if (sidebarConfig.hideHassSidebar && sidebarConfig.hideHassSidebar === true && offParam == null) {
         if (hassSidebar) {
           hassSidebar.style.display = 'none';
