@@ -234,6 +234,6 @@ sidebar:
 
 ## Screenshots
 
-![Screenshot default](screenshot-default.png)
+![Screenshot default](screenshots/screenshot-default.png)
 
-![Screenshot styled](screenshot-styled.png)
+![Screenshot styled](screenshots/screenshot-styled.png)
