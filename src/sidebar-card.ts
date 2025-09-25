@@ -898,7 +898,10 @@ function getRoot() {
 function getHeaderHeightPx() {
 	let headerHeightPx = '0px';
 	const root = getRoot();
-    const view = root.shadowRoot.getElementById('view');
+  if (!root || !root.shadowRoot) {
+    return headerHeightPx;   // Fallback for Safari LOG entry: (evaluating 'root.shadowRoot')
+  }
+  const view = root.shadowRoot.getElementById('view');
 	//debugger;
 	if(view!==undefined && window.getComputedStyle(view)!==undefined) {
 		headerHeightPx = window.getComputedStyle(view).paddingTop;
