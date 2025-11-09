@@ -167,18 +167,19 @@ class SidebarCard extends LitElement {
         ${sidebarMenu && sidebarMenu.length > 0
           ? html`
               <ul class="sidebarMenu">
-                ${sidebarMenu.map((sidebarMenuItem) => {
+                ${(sidebarMenu || []).filter(item => this._evaluateVisibleCondition(item.conditional, this.hass)).map((sidebarMenuItem) => {
                   return html`
                     <li @click="${(e) => this._menuAction(e)}" class="${sidebarMenuItem.state && this.hass.states[sidebarMenuItem.state].state != 'off' && this.hass.states[sidebarMenuItem.state].state != 'unavailable' ? 'active' : ''}" data-type="${sidebarMenuItem.action}" data-path="${sidebarMenuItem.navigation_path ? sidebarMenuItem.navigation_path : ''}" data-menuitem="${JSON.stringify(sidebarMenuItem)}">
                       <span>${sidebarMenuItem.name}</span>
                       ${sidebarMenuItem.icon
-                        ? html`
+                          ? html`
                             <ha-icon @click="${(e) => this._menuAction(e)}" icon="${sidebarMenuItem.icon}"></ha-icon>
                           `
-                        : html``}
+                          : html``}
                     </li>
                   `;
                 })}
+
               </ul>
             `
           : html``}
@@ -398,6 +399,67 @@ class SidebarCard extends LitElement {
       // Markus:
       // This line is commented out because the menu update is now triggered by the 'location-changed' event
       //this._updateActiveMenu();
+    }
+  }
+
+  _evaluateVisibleCondition(template: string | undefined, hass: any): boolean {
+    if (!template) return true;
+
+    // Clean outer braces and whitespace
+    const cleaned = template.trim().replace(/^{{\s*|\s*}}$/g, "").trim();
+
+    try {
+      // --- is_state('entity', 'value') ---
+      const matchState = cleaned.match(/is_state\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)/);
+      if (matchState) {
+        const [_, entityId, expected] = matchState;
+        return hass.states[entityId]?.state === expected;
+      }
+
+      // --- is_state_attr('entity', 'attr', 'value') ---
+      const matchAttr = cleaned.match(
+          /is_state_attr\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)/
+      );
+      if (matchAttr) {
+        const [_, entityId, attr, expected] = matchAttr;
+        return hass.states[entityId]?.attributes?.[attr] === expected;
+      }
+
+      // --- states['entity_id'] == 'value' ---
+      const matchEquals = cleaned.match(/states\[['"]([^'"]+)['"]\]\s*==\s*['"]([^'"]+)['"]/);
+      if (matchEquals) {
+        const [_, entityId, expected] = matchEquals;
+        return hass.states[entityId]?.state === expected;
+      }
+
+      // ---  Handle simple comparisons, e.g. "states['sensor.temp'] | int > 20"
+      //      Support "| int", "| float" filters and numeric comparisons.
+      const numericMatch = cleaned.match(
+          /states\[['"]([^'"]+)['"]\]\s*\|\s*(int|float)\s*([<>]=?|==)\s*([\d.]+)/
+      );
+      if (numericMatch) {
+        const [_, entityId, type, operator, thresholdStr] = numericMatch;
+        const raw = hass.states[entityId]?.state;
+        if (raw === undefined) return false;
+        const num = type === "float" ? parseFloat(raw) : parseInt(raw, 10);
+        const threshold = parseFloat(thresholdStr);
+
+        switch (operator) {
+          case ">": return num > threshold;
+          case "<": return num < threshold;
+          case ">=": return num >= threshold;
+          case "<=": return num <= threshold;
+          case "==": return num == threshold;
+          default: return false;
+        }
+      }
+
+      // Fallback: if expression doesn’t match known patterns, log a warning
+      console.warn("sidebar-card: could not parse visible template:", cleaned);
+      return true;
+    } catch (err) {
+      console.error("sidebar-card: visible template evaluation error:", err);
+      return true; // fail open
     }
   }
 
@@ -1079,6 +1141,9 @@ function createElementFromHTML(htmlString: string) {
   div.innerHTML = htmlString.trim();
   return div.firstChild;
 }
+
+
+
 
 // ##########################################################################################
 // ###   The Sidebar Card code base initialisation
