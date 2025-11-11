@@ -494,6 +494,8 @@ class SidebarCard extends LitElement {
         const [domain, service] = tapAction.service.split('.', 2);
         this.hass.callService(domain, service, tapAction.service_data);
         forwardHaptic('success');
+        break;
+      }
       case 'service-js':
         if (tapAction.service) {
           try {
@@ -502,7 +504,7 @@ class SidebarCard extends LitElement {
             .replace(/^\[\[\[\s*|\s*\]\]\]$/g, '');
             const func = new Function(code);
             func.call(this);
-            forwardHaptic('success');;
+            forwardHaptic('success');
           } catch (err) {
             forwardHaptic('failure');
           }
@@ -511,8 +513,8 @@ class SidebarCard extends LitElement {
         }
         break;
       }
-    }
   }
+
 
   setConfig(config) {
     this.config = config;
