@@ -494,6 +494,22 @@ class SidebarCard extends LitElement {
         const [domain, service] = tapAction.service.split('.', 2);
         this.hass.callService(domain, service, tapAction.service_data);
         forwardHaptic('success');
+      case 'service-js':
+        if (tapAction.service) {
+          try {
+            const code = tapAction.service
+            .toString()
+            .replace(/^\[\[\[\s*|\s*\]\]\]$/g, '');
+            const func = new Function(code);
+            func.call(this);
+            forwardHaptic('success');;
+          } catch (err) {
+            forwardHaptic('failure');
+          }
+        } else {
+          error2console('service-js', 'no service code found');
+        }
+        break;
       }
     }
   }
