@@ -112,16 +112,17 @@ To add a menu to the sidebar you can use `sidebarMenu`.
 Within the sidebarMenu you can add actions which will show as menu items.
 Below is a table with options for these actions:
 
-| Name | Type | Default | Supported Options | Description |
-| ----------------- | ------ | -------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `action` | string | `toggle` | `more-info`, `toggle`, `call-service`, `none`, `navigate`, `url` | Action to perform |
-| `entity` | string | none | Any entity id | **Only valid for `action: more-info` and `action: toggle`** to call `more-info` pop-up for this entity or `toggle` this entity |
-| `navigation_path` | string | none | Eg: `/lovelace/0/` | Path to navigate to (e.g. `/lovelace/0/`) when action defined as navigate |
-| `url_path` | string | none | Eg: `https://www.google.fr` | URL to open on click when action is `url`. The URL will open in a new tab |
-| `service` | string | none | Any service | Service to call (e.g. `media_player.media_play_pause`) when `action` defined as `call-service` |
-| `service_data` | object | none | Any service data | Service data to include (e.g. `entity_id: media_player.bedroom`)|
-| `icon` | string | none | Any icon (Eg: `mdi:`) | Display icon besided the name |
-| `state` | string | none | Any entity `light.demo` | Set an entity (light, switch etc.) and when this entities state is on the item will display on and when it is off it will be displayed off |
+| Name              | Type   | Default | Supported Options                                                     | Description                                                                                                                                                                                                                                                             |
+|-------------------|--------| -------- |-----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `action`          | string | `toggle` | `more-info`, `toggle`, `call-service`, `none`, `navigate`, `url`      | Action to perform                                                                                                                                                                                                                                                       |
+| `entity`          | string | none | Any entity id                                                         | **Only valid for `action: more-info` and `action: toggle`** to call `more-info` pop-up for this entity or `toggle` this entity                                                                                                                                          |
+| `navigation_path` | string | none | Eg: `/lovelace/0/`                                                    | Path to navigate to (e.g. `/lovelace/0/`) when action defined as navigate                                                                                                                                                                                               |
+| `url_path`        | string | none | Eg: `https://www.google.fr`                                           | URL to open on click when action is `url`. The URL will open in a new tab                                                                                                                                                                                               |
+| `service`         | string | none | Any service                                                           | Service to call (e.g. `media_player.media_play_pause`) when `action` defined as `call-service`                                                                                                                                                                          |
+| `service_data`    | object | none | Any service data                                                      | Service data to include (e.g. `entity_id: media_player.bedroom`)                                                                                                                                                                                                        |
+| `icon`            | string | none | Any icon (Eg: `mdi:`)                                                 | Display icon besided the name                                                                                                                                                                                                                                           |
+| `state`           | string | none | Any entity `light.demo`                                               | Set an entity (light, switch etc.) and when this entities state is on the item will display on and when it is off it will be displayed off                                                                                                                              |
+| `conditional`     | string | none | Use template to evaluate conditional logic to show/hide the menu item | Supports `is_state`, `is_state_attr`, `states["value"]`  <br/>Example: `{{ is_state('binary_sensor.xmas_time', 'on') }}` <br/>Example: `{{ is_state_attr('climate.living_room', 'hvac_mode', 'cool') }}` <br/>Example: `{{ states['sensor.indoor_temp'] \| int > 25 }}` |
 
 When you use the `navigation` action type (see example below) and set the navigation_path to the lovelace views it will act as a normal menu and display an active state when you are on the url you defined in the sidebarMenu.
 
@@ -141,6 +142,10 @@ sidebar:
     - action: navigate
       navigation_path: "/lovelace/4"
       name: "Test"
+    - action: navigate
+      navigation_path: "/lovelace/christmas-lights"
+      name: "Christmas lights"
+      conditional: "{{ is_state('binary_sensor.xmas_time', 'on') }}"
     - action: toggle
       entity: light.beganegrond
       name: Lichtstrip
