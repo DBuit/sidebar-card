@@ -20,15 +20,16 @@ const plugins = [
   babel({
     exclude: 'node_modules/**',
   }),
-  dev && serve({
-    contentBase: ['./dist'],
-    host: '0.0.0.0',
-    port: 5005,
-    allowCrossOrigin: true,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-    },
-  }),
+  dev &&
+    serve({
+      contentBase: ['./dist'],
+      host: '0.0.0.0',
+      port: 5005,
+      allowCrossOrigin: true,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
+    }),
   !dev && terser(),
 ].filter(Boolean);
 
@@ -40,4 +41,11 @@ export default {
     sourcemap: false,
   },
   plugins,
+
+  onwarn(warning, warn) {
+    if (warning.code === 'THIS_IS_UNDEFINED') {
+      return;
+    }
+    warn(warning);
+  },
 };

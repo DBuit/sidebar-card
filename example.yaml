@@ -1,0 +1,244 @@
+sidebar:
+  title: "Casa"
+  clock: false
+  digitalClock: true
+  digitalClockWithSeconds: false
+  date: true
+  hideTopMenu: false
+  hideHassSidebar: false
+  width: { mobile: 0, tablet: 14, desktop: 14 }
+  breakpoints: { mobile: 767, tablet: 1024 }
+
+
+
+  # ── Testo in alto (saluto, settimana, meteo) ───────────────────────────────
+  template: |
+    <li style="margin-top:6px;">
+      {% if now().hour < 12 %} Buongiorno ☕
+      {% elif now().hour < 19 %} Buon pomeriggio 👋
+      {% else %} Buonasera 🌙{% endif %}
+    </li>
+    <li>Settimana {{ now().isocalendar()[1] }}</li>
+    <li>
+      {% set wx = 'weather.forecast_casa' %}
+      ☁️ {{ states(wx) }} · {{ state_attr(wx,'temperature') }}°C · {{ state_attr(wx,'humidity') }}%
+    </li>
+  
+    
+
+  # ── Menu laterale (link viste + refresh) ───────────────────────────────────
+  menuStyle: grid
+  showLabel: true
+  style: |
+    :host {
+
+      /* ============================================================
+       *  🎨 SEZIONE WIDE (Rettangolare icona + testo)
+       * ============================================================ */
+
+      --sidebar-wide-margin-y: 16px;
+      --sidebar-wide-gap: 8px;
+      --sidebar-wide-padding-x: 14px;
+
+      --sidebar-wide-height: 48px;
+      --sidebar-wide-radius: 18px;
+      --sidebar-wide-item-gap: 10px;
+
+      --sidebar-wide-bg: rgba(255,255,255,0.18);
+      --sidebar-wide-icon-color: #000000;
+      --sidebar-wide-icon-size: 22px;
+
+      --sidebar-wide-font-size: 14px;
+      --sidebar-wide-line-height: 1.2;
+      --sidebar-wide-text-color: #111111;
+      --sidebar-wide-font-weight: 500;
+
+      /* Stato attivo */
+      --sidebar-wide-active-border-width: 0px;
+      --sidebar-wide-active-border-color: transparent;
+      --sidebar-wide-active-bg: rgba(0,0,0,1);
+      --sidebar-wide-active-opacity: 0.14;
+      --sidebar-wide-active-icon-color: rgb(247,217,89);
+      --sidebar-wide-active-icon-size: 26px;
+      --sidebar-wide-active-text-color: #111111;
+
+
+
+      /* ============================================================
+       *  🟥 SEZIONE BUTTONS (quadrato + icona, label opzionale)
+       * ============================================================ */
+
+      --sidebar-button-margin-y: 16px;
+      --sidebar-button-gap: 8px;
+      --sidebar-button-item-gap: 10px;
+
+      --sidebar-button-size: 56px;
+      --sidebar-button-box-size: 56px;
+      --sidebar-button-radius: 18px;
+
+      --sidebar-button-bg: rgba(255,255,255,0.18);
+      --sidebar-button-icon-color: #000000;
+      --sidebar-button-icon-size: 28px;
+
+      --sidebar-button-font-size: 13px;
+      --sidebar-button-line-height: 1.2;
+      --sidebar-button-text-color: var(--primary-text-color, #000);
+      --sidebar-button-font-weight: 500;
+
+      /* Stato attivo */
+      --sidebar-button-active-border-width: 3px;
+      --sidebar-button-active-border-color: #ffffff;
+      --sidebar-button-active-shadow-color: rgba(0,0,0,0.18);
+      --sidebar-button-active-icon-color: rgb(247,217,89);
+      --sidebar-button-active-text-color: var(--primary-text-color, #000);
+
+
+
+      /* ============================================================
+       *  🟦 SEZIONE GRID (stile iPhone — icona sopra, testo sotto)
+       * ============================================================ */
+
+      --sidebar-grid-margin-y: 14px;
+      --sidebar-grid-gap: 12px;
+      --sidebar-grid-item-padding: 4px;
+
+      --sidebar-grid-box-size: 72px;
+      --sidebar-grid-radius: 22px;
+      --sidebar-grid-bg: rgba(255,255,255,0.15);
+
+      --sidebar-grid-icon-size: 40px;
+      --sidebar-grid-icon-color: #000000;
+
+      --sidebar-grid-label-margin-top: 6px;
+      --sidebar-grid-font-size: 18px;
+      --sidebar-grid-line-height: 1.2;
+      --sidebar-grid-font-weight: 300;
+      --sidebar-grid-text-color: var(--white, #000);
+
+      /* Stato attivo */
+      --sidebar-grid-active-border: rgba(255,255,255,0.7);
+      --sidebar-grid-active-bg: rgba(255,255,255,0.25);
+      --sidebar-grid-active-icon-color: var(--white);
+      --sidebar-grid-active-text-color: var(--green, #000);
+      
+      --sidebar-grid-columns: 2;
+      --sidebar-grid-rows: 7;
+      --sidebar-grid-row-height: 110px;
+
+
+
+      /* ============================================================
+       *  🌈 SEZIONE COMUNI (fallback generali)
+       * ============================================================ */
+
+      --sidebar-selected-bg: rgba(0,0,0,1);
+      --sidebar-icon-color: #000000;
+      --primary-text-color: #000000;
+
+    }
+
+
+    /* --- DIMENSIONE ORARIO --- */
+    .digitalClock {
+      font-size: 40px !important;
+      line-height: 1 !important;
+    }
+
+    .digitalClock.with-seconds {
+      font-size: 48px !important;
+      line-height: 1 !important;
+    }
+
+    /* --- DIMENSIONE DATA --- */
+    .date {
+      font-size: 20px !important;
+      font-weight: 400 !important;
+      margin-top: 4px !important;
+      line-height: 1.2 !important;
+    }
+  
+  sidebarMenu:
+    - action: navigate   # Home
+      navigation_path: "/casa/home"
+      name: "Home"
+      icon: mdi:home
+      background_color: "var(--blue)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Tapparelle
+      navigation_path: "/casa/tapparelle"
+      name: "Tapparelle"
+      icon: mdi:blinds
+      background_color: "var(--yellow)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Clima
+      navigation_path: "/casa/airzone"
+      name: "Clima"
+      icon: mdi:thermometer
+      background_color: "var(--cyan)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Elettrodomestici
+      navigation_path: "/casa/elettrodomestici"
+      name: "Elettrodom."
+      icon: mdi:washing-machine
+      background_color: "var(--pink)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Energia
+      navigation_path: "/casa/energia"
+      name: "Energia"
+      icon: mdi:solar-power-variant
+      background_color: "var(--orange)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Acqua
+      navigation_path: "/casa/acqua"
+      name: "Acqua"
+      icon: mdi:water
+      background_color: "var(--blue)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Telecamere
+      navigation_path: "/casa/telecamere"
+      name: "Telecamere"
+      icon: mdi:cctv
+      background_color: "var(--purple)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Calcio
+      navigation_path: "/casa/calcio"
+      name: "Calcio"
+      icon: mdi:soccer
+      background_color: "var(--green)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Settings
+      navigation_path: "/config/dashboard"
+      name: "Settings"
+      icon: mdi:cog-outline
+      background_color: "var(--grey)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Profilo
+      navigation_path: "/profile/general"
+      name: "Profilo"
+      icon: mdi:face-man-profile
+      background_color: "var(--lime)"
+      icon_color: "var(--black)"
+
+    - action: service-js  # Menu HA
+      service: |-
+        this.dispatchEvent(new Event('hass-toggle-menu', { bubbles: true, composed: true }));
+      icon: mdi:menu
+      name: "Menu"
+      background_color: "var(--grey)"
+      icon_color: "var(--black)"
+
+    - action: call-service  # Reload
+      service: browser_mod.refresh
+      icon: mdi:reload
+      name: "Reload"
+      background_color: "var(--grey-light)"
+      icon_color: "var(--black)"

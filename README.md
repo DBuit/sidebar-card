@@ -1,87 +1,115 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs) &nbsp;&nbsp;&nbsp; [![GitHub release (latest by date)](https://img.shields.io/github/v/release/DBuit/sidebar-card?style=for-the-badge)](https://github.com/DBuit/sidebar-card/releases) <!-- markdownlint-disable MD041 -->
 
-# Sidebar card [WIP]
+# THANKS DBuit for original work 
+https://github.com/DBuit/sidebar-card
 
-This card adds a sidebar to your interface which you can configure globally so every page has the sidebar. It can replace your top navigation but can also give extra functionality.
+# Sidebar card
 
-<a href="https://www.buymeacoffee.com/ZrUK14i" target="_blank"><img height="41px" width="167px" src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" /></a> <!-- markdownlint-disable MD033 -->
+This card adds a sidebar to your interface which you can configure globally so every page has the same navigation and extra information.  
+It can **replace the top navigation** or **complement it** with extra controls, icons and custom content.
+
+---
+
+## ✨ Highlights / New features
+
+- Multiple **menu layouts** via `menuStyle`:
+  - `list` – original simple list
+  - `wide` – full-width pill buttons (icon + text)
+  - `buttons` – square colored icons, with optional label on the right
+  - `grid` – iOS-like grid: icon in a rounded square with label underneath
+- **Per-entry colors** for icons and backgrounds:
+  - `background_color`
+  - `icon_color`
+- **Config-driven theming**:
+  - Different CSS variables for `wide`, `buttons` and `grid`
+  - All overridable in `sidebar: style: |` via `:host { ... }`
+- Optional **visibility conditions** for menu items (simple Jinja-like expressions)
+- Keeps support for:
+  - Clocks, date, templates, bottom card, breakpoints, width, etc.
+
+---
 
 ## Installation Instructions
 
-### HACS Installation
+## HACS
 
-Go to the hacs store and use the repo url `https://github.com/DBuit/sidebar-card` and add this as a custom repository under settings.
+This integration can be installed manually or via HACS when available.
 
-In Home Assistant's global settings, add the resource:
-
-1. Go to **Settings → Dashboards → Three-dots menu → Resources** in the top right
-2. Click **+ Add Resource** button in the bottom right
-3. Enter in the following:
-    * **URL:** /hacsfiles/sidebar-card/sidebar-card.js
-    * **Resource Type:** JavaScript Module
-4. Click Create
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bobsilvio&repository=sidebar-card&category=integration)
 
 ### Manual Installation
 
-Copy the .js file from the dist directory to your www directory and add the following to your ui-lovelace.yaml file:
+1. Build / download `sidebar-card.js` from the `dist` directory
+2. Copy it into `<config>/www/sidebar-card.js`
+3. Add the resource to your Lovelace config:
 
 ```yaml
 resources:
-  url: /local/sidebar-card.js
-  type: module
+  - url: /local/sidebar-card.js
+    type: module
 ```
+
+---
 
 ## Configuration
 
-The YAML configuration happens at the root of your Lovelace config under `sidebar:` at the same level as `resources:` and `views:`. Example:
+The configuration is defined at the root of your Lovelace YAML under `sidebar:`  
+(on the same level as `resources:` and `views:`).
 
 ```yaml
 resources:
   - url: /local/sidebar-card.js?v=0.0.1
     type: module   
+
 sidebar:
   title: "Sidebar title"
+  menuStyle: wide     # list | wide | buttons | grid
+  sidebarMenu: ...
 views:
-...
+  ...
 ```
 
-### Main Options
+---
+
+## Main Options
 
 Under `sidebar:` you can configure the following options:
 
-| Name | Type | Default | Supported Options | Description |
-| -------------- | ----------- | ------------ | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title` | string | optional | `Title` | Title to show in the sidebar |
-| `clock` | boolean | optional | `true` | Show analog clock in sidebar |
-| `date` | boolean | optional | `false` | If date is enabled it will display the current date |
-| `dateFormat` | boolean | string | `DD MMMM` | If date is enabled you define how it should show the date with dateFormat, to see the options check this url: [https://momentjs.com/docs/#/parsing/string-format/](https://momentjs.com/docs/#/parsing/string-format/) |
-| `digitalClock` | boolean | optional | `true` | Show digital clock in sidebar |
-| `digitalClockWithSeconds` | boolean | optional | `true` | If digitalClock is enabled you can also enable to show seconds |
-| `twelveHourVersion` | boolean | optional | `false` | If digitalClock is enabled you can also enable this to 12 hour version |
-| `period` | boolean | optional | `false` | If twelveHourVersion is enabled you can enable this to show 'AM' or 'PM' |
-| `sidebarMenu` | object | optional | *see info below* | Create a menu that can switch to different pages but also call any service you want |
-| `updateMenu` | boolean | optional | `true` | When false the active state of the sidebar will not change by navigating to a different view |
-| `template` | template | optional | *see info below* | Template rules that will show messages to inform you for example with how many lights are on |
-| `style` | css | optional | *see info below* | Overwrite some color variables or write your own styles |
-| `width` | object | optional | *see info below* | The width of the sidebar in percentages for different screens |
-| `breakpoints` | object | optional | *see info below* | For the width we set different sizes for different screens with breakpoints you can overwrite these breakpoints |
-| `bottomCard` | object | optional | *see info below* | Define any card that will be rendered at the bottom of the sidebar |
-| `showTopMenuOnMobile` | boolean | optional | `true` | If you hide the top menu you can set this to `true` so that it will be shown on mobile |
-| `hideHassSidebar` | boolean | optional | `true` | Hide the home assistant sidebar |
-| `hideOnPath` | array | optional | /lovelace/camera | If you don't want the sidebar on every path you can add a list of paths where it should hide the sidebar |
-| `hideTopMenu` | boolean | optional | `true` | Hide the top home assistant menu |
-| `debug` | boolean | optional | `false` | Show debugging messages in the browser's developer console |
+| Name                         | Type     | Default | Supported Options                                | Description                                                                                                                                                                 |
+|------------------------------|----------|---------|--------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `title`                      | string   | –       | any string                                       | Title shown in the sidebar (above the menu).                                                                                                                                |
+| `clock`                      | boolean  | false   | `true` / `false`                                 | Show an analog clock.                                                                                                                                                       |
+| `date`                       | boolean  | false   | `true` / `false`                                 | Show the current date.                                                                                                                                                      |
+| `dateFormat`                 | string   | `DD MMMM` | Moment.js format                                  | Format for the date (see [Moment.js docs](https://momentjs.com/docs/#/parsing/string-format/)).                                                                            |
+| `digitalClock`               | boolean  | true    | `true` / `false`                                 | Show a digital clock.                                                                                                                                                       |
+| `digitalClockWithSeconds`    | boolean  | true    | `true` / `false`                                 | Show seconds in the digital clock.                                                                                                                                          |
+| `twelveHourVersion`          | boolean  | false   | `true` / `false`                                 | Use 12-hour clock instead of 24-hour when `digitalClock` is enabled.                                                                                                       |
+| `period`                     | boolean  | false   | `true` / `false`                                 | When using 12-hour clock, show `AM` / `PM`.                                                                                                                                |
+| `sidebarMenu`                | list     | –       | see section below                                | Array of menu items (navigation, toggle, call-service, url, etc.).                                                                                                         |
+| `menuStyle`                  | string   | `list`  | `list`, `wide`, `buttons`, `grid`               | Layout style for the menu (see **Menu Layouts** section).                                                                                                                   |
+| `showLabel`                  | boolean  | false   | `true` / `false`                                 | When `menuStyle: buttons`, show the text label to the right of the square icon. Ignored for `list`, `wide` and `grid` (grid always shows label under the icon).            |
+| `updateMenu`                 | boolean  | true    | `true` / `false`                                 | When `false`, the active state of the sidebar is not updated on navigation.                                                                                                |
+| `template`                   | template | –       | see section below                                | Jinja-like template that renders a custom `<li>` / `<div>` list to be shown under the clock/date/title.                                                                   |
+| `style`                      | css      | –       | custom CSS                                       | Extra CSS injected into the card. Use `:host { ... }` to override variables and styles.                                                                                     |
+| `width`                      | object   | 25%     | `{ mobile, tablet, desktop }` in %               | Sidebar width in percentages per breakpoint. See **Width** section.                                                                                                         |
+| `breakpoints`                | object   | see doc | `{ mobile, tablet }` in px                       | Custom breakpoints for mobile / tablet / desktop.                                                                                                                           |
+| `bottomCard`                 | object   | –       | see section below                                | Any HA card (or custom card) rendered at the bottom of the sidebar.                                                                                                        |
+| `showTopMenuOnMobile`        | boolean  | true    | `true` / `false`                                 | If `hideTopMenu` is enabled, this still shows the top menu on mobile.                                                                                                      |
+| `hideHassSidebar`            | boolean  | true    | `true` / `false`                                 | Hide Home Assistant’s built-in left sidebar.                                                                                                                                |
+| `hideOnPath`                 | list     | –       | e.g. `/lovelace/camera`                          | Paths where this custom sidebar should be hidden.                                                                                                                           |
+| `hideTopMenu`                | boolean  | true    | `true` / `false`                                 | Hide the default Home Assistant top bar.                                                                                                                                    |
+| `debug`                      | boolean  | false   | `true` / `false`                                 | Log debug messages in the browser’s developer console.                                                                                                                     |
 
-When using **hideTopMenu** and/or **hideHassSidebar** you can disable this by adding `?sidebarOff` to the url.
-For example you get this url: [https://myhomeassistant.duckdns.org/lovelace/home?sidebarOff](https://myhomeassistant.duckdns.org/lovelace/home?sidebarOff)
+> 💡 When using **hideTopMenu** and/or **hideHassSidebar**, you can temporarily disable the custom sidebar by appending `?sidebarOff` to the URL, e.g.:  
+> `https://myhomeassistant.duckdns.org/lovelace/home?sidebarOff`
 
-#### Width
+---
 
-The width of the sidebar can be manually specified. By default it will be `25%` of the width on all screens.
-With the `width` option you can set the width for 3 sizes: `mobile`, `tablet` and `desktop`.
-You can also set the width to `0` to make the sidebar not appear.
+## Width
 
-Example to set width (This example hides the sidebar on mobile):
+By default, the sidebar is `25%` wide on all screen sizes.  
+You can override this with the `width` object, specifying percentages for `mobile`, `tablet` and `desktop`.
+
+Example (hide sidebar on mobile):
 
 ```yaml
 sidebar:
@@ -91,13 +119,18 @@ sidebar:
     desktop: 20
 ```
 
-#### Breakpoints
+---
 
-Above we have set the width for 3 sizes but you can also set the breakpoints for these sizes to change the moment the size of the page changes.
-The breakpoint is activated when the width is smaller or equal to the value that is set.
-Default mobile is `768px` or smaller, tablet `1024px` or smaller and above `1024px` is desktop.
+## Breakpoints
 
-Example to set breakpoints:
+Breakpoints decide when `mobile`, `tablet` or `desktop` widths apply.  
+By default:
+
+- `mobile`: `<= 768px`
+- `tablet`: `<= 1024px`
+- `desktop`: `> 1024px`
+
+You can override them:
 
 ```yaml
 sidebar:
@@ -106,108 +139,316 @@ sidebar:
     tablet: 1024
 ```
 
-#### sidebarMenu
+---
 
-To add a menu to the sidebar you can use `sidebarMenu`.
-Within the sidebarMenu you can add actions which will show as menu items.
-Below is a table with options for these actions:
+## Menu Layouts (`menuStyle`)
 
-| Name | Type | Default | Supported Options | Description |
-| ----------------- | ------ | -------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `action` | string | `toggle` | `more-info`, `toggle`, `call-service`, `none`, `navigate`, `url` | Action to perform |
-| `entity` | string | none | Any entity id | **Only valid for `action: more-info` and `action: toggle`** to call `more-info` pop-up for this entity or `toggle` this entity |
-| `navigation_path` | string | none | Eg: `/lovelace/0/` | Path to navigate to (e.g. `/lovelace/0/`) when action defined as navigate |
-| `url_path` | string | none | Eg: `https://www.google.fr` | URL to open on click when action is `url`. The URL will open in a new tab |
-| `service` | string | none | Any service | Service to call (e.g. `media_player.media_play_pause`) when `action` defined as `call-service` |
-| `service_data` | object | none | Any service data | Service data to include (e.g. `entity_id: media_player.bedroom`)|
-| `icon` | string | none | Any icon (Eg: `mdi:`) | Display icon besided the name |
-| `state` | string | none | Any entity `light.demo` | Set an entity (light, switch etc.) and when this entities state is on the item will display on and when it is off it will be displayed off |
+### 1. `list` (default)
 
-When you use the `navigation` action type (see example below) and set the navigation_path to the lovelace views it will act as a normal menu and display an active state when you are on the url you defined in the sidebarMenu.
+Classic sidebar: simple list of entries with optional icons.
 
 ```yaml
 sidebar:
+  menuStyle: list
   sidebarMenu:
     - action: navigate
-      navigation_path: "/lovelace/home"
-      name: "Home"
-      active: true
-    - action: navigate
-      navigation_path: "/lovelace/lampen"
-      name: "Lampen"
-    - action: navigate
-      navigation_path: "/lovelace/music"
-      name: "Muziek"
-    - action: navigate
-      navigation_path: "/lovelace/4"
-      name: "Test"
-    - action: toggle
-      entity: light.beganegrond
-      name: Lichtstrip
-      state: light.beganegrond
-      icon: mdi:led-strip-variant
+      navigation_path: /lovelace/home
+      name: Home
+      icon: mdi:home
 ```
 
-#### Template
+---
 
-The `template` option gives you a place to template a list of messages than can be shown.
-Every message must start with the HTML tag `<li>` and end with `</li>`. Within the tags you can template your message.
+### 2. `wide` – full-width pill buttons
 
-For example, to say Goedemorgen == Good morning for non dutch people, or display how many lights or media_players are on, etc. Additional examples are below:
+Each entry is a rounded “pill” spanning the full width: icon + label.
 
 ```yaml
 sidebar:
-  template: |
-    <li>
-      {% if now().hour  < 5 %} Goede nacht {{'\U0001F634'}}
-      {% elif now().hour < 12 %} Goedemorgen {{'\u2615\uFE0F'}}
-      {% elif now().hour < 18 %} Goedenmiddag {{'\U0001F44B\U0001F3FB'}}
-      {% else %} Goedenavond {{'\U0001F44B\U0001F3FB'}}{% endif %}
-    </li>
-    {% if "Vandaag" in states('sensor.blink_gft') %} <li>Vandaag groenebak aan de straat</li> {% endif %}
-    {% if "Vandaag" in states('sensor.blink_papier') %} <li>Vandaag oudpapier aan de straat</li> {% endif %}
-    {% if "Vandaag" in states('sensor.blink_pmd') %} <li>Vandaag plastic aan de straat</li> {% endif %}
-    {% if "Vandaag" in states('sensor.blink_restafval') %} <li>Vandaag grijzebak aan de straat</li> {% endif %}
-    {% if "Morgen" in states('sensor.blink_gft') %} <li>Morgen groenebak aan de straat</li> {% endif %}
-    {% if "Morgen" in states('sensor.blink_papier') %} <li>Morgen oudpapier aan de straat</li> {% endif %}
-    {% if "Morgen" in states('sensor.blink_pmd') %} <li>Morgen plastic aan de straat</li> {% endif %}
-    {% if "Morgen" in states('sensor.blink_restafval') %} <li>Morgen grijzebak aan de straat</li> {% endif %}
-    {% if states('sensor.current_lights_on') | float > 0 %} <li>{{states('sensor.current_lights_on')}} lampen aan</li> {% endif %}
-    {% if states('sensor.current_media_players_on') | float > 0 %} <li>{{states('sensor.current_media_players_on')}} speakers aan</li> {% endif %}
+  menuStyle: wide
+  sidebarMenu:
+    - action: navigate
+      navigation_path: /lovelace/home
+      name: Home
+      icon: mdi:home
+    - action: navigate
+      navigation_path: /lovelace/lights
+      name: Lights
+      icon: mdi:lightbulb
 ```
 
-#### Style
-
-By default there are some variables that you can set to change colors.
-Of course you can also add your own styles to customize it more.
-In the below example you can find the variables with the default colors.
-
-Example:
+You can style `wide` buttons via variables (see **Styling**):
 
 ```yaml
 sidebar:
   style: |
     :host {
-        --sidebar-background: #FFF;
-        --sidebar-text-color: #000;
-        --face-color: #FFF;
-        --face-border-color: #FFF;
-        --clock-hands-color: #000;
-        --clock-seconds-hand-color: #FF4B3E;
-        --clock-middle-background: #FFF;
-        --clock-middle-border: #000;
-    }
+      --sidebar-wide-bg: rgba(255,255,255,0.15);
+      --sidebar-wide-text-color: #111111;
+      --sidebar-wide-icon-color: #111111;
 
+      --sidebar-wide-active-bg: #ffffff;
+      --sidebar-wide-active-border-width: 2px;
+      --sidebar-wide-active-border-color: rgba(255,255,255,0.7);
+      --sidebar-wide-active-icon-color: #f7d959;
+      --sidebar-wide-active-text-color: #ffffff;
+    }
 ```
 
-#### Bottom Custom Card
+---
 
-To start, add `bottomCard` to your sidebar config.
-`bottomCard` has 3 parts.
+### 3. `buttons` – square colored icons (optionally with text)
 
-1. `type` - This can be the default home assistant card or any custom card.
-2. `cardOptions` - Most cards need some configuration (i.e.: an entity). This should be placed under `cardOptions`.
-3. `cardStyle` (optional) - To make sure the card fits your sidebar style you can add extra CSS rules for the card to make it fit better.
+Ideal for a **minimal vertical icon bar** (only icons) or **icons + label**.
+
+```yaml
+sidebar:
+  menuStyle: buttons
+  showLabel: true      # false = only square icons
+  sidebarMenu:
+    - action: navigate
+      navigation_path: /lovelace/home
+      name: Home
+      icon: mdi:home
+    - action: navigate
+      navigation_path: /lovelace/lights
+      name: Lights
+      icon: mdi:lightbulb
+```
+
+Styling example:
+
+```yaml
+sidebar:
+  style: |
+    :host {
+      /* background for the square icon */
+      --sidebar-button-bg: rgba(255,255,255,0.18);
+      --sidebar-button-icon-color: #000000;
+      --sidebar-button-text-color: var(--primary-text-color);
+
+      /* when active */
+      --sidebar-button-active-border-color: #ffffff;
+      --sidebar-button-active-shadow-color: rgba(0,0,0,0.18);
+      --sidebar-button-active-icon-color: #f7d959;
+      --sidebar-button-active-text-color: #ffffff;
+    }
+```
+
+---
+
+### 4. `grid` – iOS-like icon grid
+
+Icons in rounded squares with label underneath, arranged in a **grid**.
+
+```yaml
+sidebar:
+  menuStyle: grid
+  style: |
+    :host {
+      --sidebar-grid-columns: 4;          # icons per row
+      --sidebar-grid-rows: 2;             # visible rows before scrolling
+      --sidebar-grid-row-height: 100px;   # height of each “row”
+      --sidebar-grid-box-size: 72px;      # square size
+      --sidebar-grid-icon-size: 40px;     # icon size inside the square
+    }
+  sidebarMenu:
+    - action: navigate
+      navigation_path: /lovelace/home
+      name: Home
+      icon: mdi:home
+    - action: navigate
+      navigation_path: /lovelace/lights
+      name: Lights
+      icon: mdi:lightbulb
+    - action: navigate
+      navigation_path: /lovelace/climate
+      name: Climate
+      icon: mdi:thermostat
+    # ...
+```
+
+Additional grid variables (all optional):
+
+- `--sidebar-grid-margin-y`
+- `--sidebar-grid-gap`
+- `--sidebar-grid-item-padding`
+- `--sidebar-grid-radius`
+- `--sidebar-grid-font-size`
+- `--sidebar-grid-font-weight`
+- `--sidebar-grid-text-color`
+- `--sidebar-grid-active-border`
+- `--sidebar-grid-active-bg`
+- `--sidebar-grid-active-icon-color`
+- `--sidebar-grid-active-text-color`
+
+---
+
+## `sidebarMenu` entries
+
+Each item in `sidebarMenu` supports the following options:
+
+| Name               | Type   | Default | Description                                                                                                             |
+|--------------------|--------|---------|-------------------------------------------------------------------------------------------------------------------------|
+| `action`           | string | `toggle` | `more-info`, `toggle`, `call-service`, `none`, `navigate`, `url`                                                       |
+| `entity`           | string | –       | Entity id. Used with `more-info` and `toggle`.                                                                          |
+| `navigation_path`  | string | –       | Path to navigate to when `action: navigate` (e.g. `/lovelace/home`).                                                   |
+| `url_path`         | string | –       | URL opened in a new tab when `action: url`.                                                                             |
+| `service`          | string | –       | Service to call when `action: call-service` (e.g. `media_player.media_play_pause`).                                    |
+| `service_data`     | object | –       | Service data (e.g. `{ entity_id: media_player.living_room }`).                                                         |
+| `icon`             | string | –       | Icon (e.g. `mdi:home`).                                                                                                 |
+| `name`             | string | –       | Label to show (depending on `menuStyle` / `showLabel`).                                                                 |
+| `state`            | string | –       | Entity id whose state defines whether the menu item is considered “on”/“active”.                                       |
+| `background_color` | string | –       | Per-item background color for wide / buttons / grid (overrides global bg).                                             |
+| `icon_color`       | string | –       | Per-item icon color (overrides global icon color).                                                                      |
+| `conditional`      | string | –       | Simple visibility condition e.g. `{{ is_state('person.silvio', 'home') }}` or `{{ states['sensor.temp'] | int > 25 }}` |
+
+Example:
+
+```yaml
+sidebar:
+  menuStyle: buttons
+  showLabel: true
+  sidebarMenu:
+    - action: navigate
+      navigation_path: "/lovelace/home"
+      name: "Home"
+      icon: mdi:home
+      background_color: "rgba(255,255,255,0.20)"
+      icon_color: "#000000"
+    - action: navigate
+      navigation_path: "/lovelace/lights"
+      name: "Lights"
+      icon: mdi:lightbulb
+      state: light.house_all
+      conditional: "{{ is_state('light.house_all', 'on') }}"
+    - action: toggle
+      entity: light.house_all
+      name: "All Lights"
+      icon: mdi:light-switch
+```
+
+> When using `action: navigate` and a `navigation_path` that matches your views, the card will automatically mark the corresponding entry as “active” based on the current path.
+
+---
+
+## Template
+
+The `template` option lets you insert arbitrary HTML list items (and simple `<div>`s) below the header.
+
+- Each line must start with `<li>` or `<div>` and end with `</li>` or `</div>`.
+- Inside you can use standard Home Assistant template syntax.
+
+Example:
+
+```yaml
+sidebar:
+  template: |
+    <li style="margin-top:6px;">
+      {% if now().hour < 12 %} Good morning ☕
+      {% elif now().hour < 19 %} Good afternoon 👋
+      {% else %} Good evening 🌙{% endif %}
+    </li>
+    <li>Week {{ now().isocalendar()[1] }}</li>
+```
+
+You can mix this with any other content like `sensors`, `weather.entities`, etc.
+
+---
+
+## Styling
+
+You can override or extend styles by using the `style:` option with a CSS block.  
+Use `:host { ... }` to override theme variables.
+
+### Core variables
+
+```yaml
+sidebar:
+  style: |
+    :host {
+      --sidebar-background: #ffffff;
+      --sidebar-text-color: #000000;
+      --sidebar-icon-color: #000000;
+
+      --face-color: #ffffff;
+      --face-border-color: #ffffff;
+      --clock-hands-color: #000000;
+      --clock-seconds-hand-color: #ff4b3e;
+      --clock-middle-background: #ffffff;
+      --clock-middle-border: #000000;
+    }
+```
+
+### Wide-specific variables
+
+```yaml
+sidebar:
+  style: |
+    :host {
+      --sidebar-wide-bg: rgba(255,255,255,0.15);
+      --sidebar-wide-icon-color: #111111;
+      --sidebar-wide-text-color: #111111;
+
+      --sidebar-wide-active-bg: #ffffff;
+      --sidebar-wide-active-border-width: 2px;
+      --sidebar-wide-active-border-color: rgba(255,255,255,0.7);
+      --sidebar-wide-active-icon-color: #f7d959;
+      --sidebar-wide-active-text-color: #ffffff;
+    }
+```
+
+### Buttons-specific variables
+
+```yaml
+sidebar:
+  style: |
+    :host {
+      --sidebar-button-bg: rgba(255,255,255,0.18);
+      --sidebar-button-icon-color: #000000;
+      --sidebar-button-text-color: var(--primary-text-color);
+
+      --sidebar-button-active-border-color: #ffffff;
+      --sidebar-button-active-shadow-color: rgba(0,0,0,0.18);
+      --sidebar-button-active-icon-color: #f7d959;
+      --sidebar-button-active-text-color: #ffffff;
+    }
+```
+
+### Grid-specific variables
+
+```yaml
+sidebar:
+  style: |
+    :host {
+      --sidebar-grid-columns: 4;
+      --sidebar-grid-rows: 2;
+      --sidebar-grid-row-height: 100px;
+      --sidebar-grid-gap: 12px;
+
+      --sidebar-grid-box-size: 72px;
+      --sidebar-grid-radius: 22px;
+      --sidebar-grid-icon-size: 40px;
+
+      --sidebar-grid-text-color: var(--primary-text-color);
+      --sidebar-grid-active-border: rgba(255,255,255,0.7);
+      --sidebar-grid-active-bg: rgba(255,255,255,0.25);
+      --sidebar-grid-active-icon-color: #f7d959;
+      --sidebar-grid-active-text-color: var(--primary-text-color);
+    }
+```
+
+---
+
+## Bottom Custom Card
+
+You can render any card at the bottom of the sidebar via `bottomCard`.
+
+Structure:
+
+1. `type` – any built-in or custom card
+2. `cardOptions` – standard card configuration options
+3. `cardStyle` (optional) – extra CSS injected into the card
 
 Example:
 
@@ -228,11 +469,150 @@ sidebar:
     cardStyle: |
       :host {
         width: 100%;
-        background-color:#FFF;
+        background-color: #ffffff;
       }
 ```
 
+---
+# Sidebar Card – CSS Variables Reference (English)
+
+## 🎨 CSS Variables Overview
+The sidebar card supports a wide set of CSS variables that allow full control of colors, icons, backgrounds, borders, and active‑state styling.
+
+All variables can be defined inside:
+
+```yaml
+sidebar:
+  style: |
+    :host {
+      --variable-name: value;
+    }
+```
+
+---
+
+# 🟥 GLOBAL VARIABLES  
+(Affect all menu styles unless overridden)
+
+| Variable | Description |
+|---------|-------------|
+| `--sidebar-background` | Background color of the sidebar |
+| `--sidebar-text-color` | Default text color |
+| `--sidebar-icon-color` | Default icon color |
+| `--sidebar-selected-bg` | Background overlay when active |
+| `--sidebar-selected-icon-color` | Icon color when active |
+
+---
+
+# 🟦 WIDE STYLE  
+(Rectangular full‑width buttons)
+
+## Normal state
+
+| Variable | Description |
+|---------|-------------|
+| `--sidebar-wide-bg` | Background of the wide button |
+| `--sidebar-wide-text-color` | Text color |
+| `--sidebar-wide-icon-color` | Icon color |
+
+## Active state
+
+| Variable | Description |
+|---------|-------------|
+| `--sidebar-wide-active-bg` | Background overlay when active |
+| `--sidebar-wide-active-border-width` | Border width when selected |
+| `--sidebar-wide-active-border-color` | Border color when selected |
+| `--sidebar-wide-active-text-color` | Text color when active |
+| `--sidebar-wide-active-icon-color` | Icon color when active |
+
+---
+
+# 🟩 BUTTONS STYLE  
+(Square icon button with optional label)
+
+## Normal state
+
+| Variable | Description |
+|---------|-------------|
+| `--sidebar-button-bg` | Background of the icon square |
+| `--sidebar-button-icon-color` | Icon color |
+| `--sidebar-button-text-color` | Label text color |
+
+## Active state
+
+| Variable | Description |
+|---------|-------------|
+| `--sidebar-button-active-border-color` | Border color when active |
+| `--sidebar-button-active-shadow-color` | Glow around selected button |
+| `--sidebar-button-active-icon-color` | Icon color when active |
+| `--sidebar-button-active-text-color` | Label color when active |
+
+---
+
+# 🟧 GRID STYLE  
+(iPhone-style icons: large square + label underneath)
+
+## Normal state
+
+| Variable | Description |
+|---------|-------------|
+| `--sidebar-grid-bg` | Background of the icon square |
+| `--sidebar-grid-icon-color` | Icon color |
+| `--sidebar-grid-text-color` | Label text color |
+| `--sidebar-grid-size` | Square size (default 72px) |
+| `--sidebar-grid-icon-size` | Icon size inside square (default 40px) |
+
+## Active state
+
+| Variable | Description |
+|---------|-------------|
+| `--sidebar-grid-active-bg` | Background overlay when active |
+| `--sidebar-grid-active-border` | Glow/border around selected icon |
+| `--sidebar-grid-active-icon-color` | Icon color when active |
+| `--sidebar-grid-active-text-color` | Label color when active |
+
+---
+
+# 🟪 Example usage
+
+```yaml
+sidebar:
+  style: |
+    :host {
+      --sidebar-background: #111;
+      --sidebar-text-color: #fff;
+
+      --sidebar-wide-bg: rgba(255,255,255,0.12);
+      --sidebar-wide-icon-color: #fff;
+      --sidebar-wide-text-color: #fff;
+
+      --sidebar-wide-active-bg: #fff;
+      --sidebar-wide-active-border-color: #ffcc00;
+      --sidebar-wide-active-border-width: 2px;
+
+      --sidebar-button-bg: rgba(255,255,255,0.15);
+      --sidebar-button-icon-color: #000;
+
+      --sidebar-grid-bg: rgba(255,255,255,0.15);
+      --sidebar-grid-icon-color: #000;
+      --sidebar-grid-text-color: #fff;
+      --sidebar-grid-size: 72px;
+      --sidebar-grid-icon-size: 40px;
+
+      --sidebar-grid-active-bg: rgba(255,255,255,0.25);
+      --sidebar-grid-active-border: rgba(255,255,255,0.7);
+      --sidebar-grid-active-icon-color: #ffcc00;
+    }
+```
+
+---
+
+If you want, I can also generate a visual documentation table, examples for each layout style, or a dedicated README block.
+
+---
 ## Screenshots
+
+*(Update with your own screenshots for list / wide / buttons / grid as needed.)*
 
 ![Screenshot default](screenshots/screenshot-default.png)
 
