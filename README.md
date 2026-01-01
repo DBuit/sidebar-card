@@ -1,3 +1,6 @@
+[![Sample](https://storage.ko-fi.com/cdn/generated/zfskfgqnf/2025-03-07_rest-7d81acd901abf101cbdf54443c38f6f0-dlmmonph.jpg)](https://ko-fi.com/silviosmart)
+
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs) &nbsp;&nbsp;&nbsp; [![GitHub release (latest by date)](https://img.shields.io/github/v/release/DBuit/sidebar-card?style=for-the-badge)](https://github.com/DBuit/sidebar-card/releases) <!-- markdownlint-disable MD041 -->
 
 # Sidebar card [WIP]
