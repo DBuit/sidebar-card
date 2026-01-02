@@ -42,19 +42,13 @@ Sistema **completamente personalizzabile** di **Header + Sidebar** per Home Assi
 
 # 📦 Installazione
 
-## HACS (Consigliata)
+## HACS
 
-```yaml
-url: /hacsfiles/sidebar-card/sidebar-card.js
-type: module
-```
+Puoi installare l'integrazione premendo direttamente sul tasto
 
-## Manuale
+[![Apri in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bobsilvio&repository=sidebar-card&category=integration)
 
-```yaml
-url: /local/sidebar-card.js
-type: module
-```
+
 
 ---
 
