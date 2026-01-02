@@ -46,7 +46,7 @@ A fully‑customisable **Header + Sidebar layout system for Home Assistant**, de
 
 This integration can be installed manually or via HACS when available.
 
-[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bobsilvio&repository=sidebar-card&category=integration)
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bobsilvio&repository=sidebar-card&category=plugin)
 ---
 
 ## Manual Install
