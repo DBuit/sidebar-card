@@ -46,7 +46,7 @@ Sistema **completamente personalizzabile** di **Header + Sidebar** per Home Assi
 
 Puoi installare l'integrazione premendo direttamente sul tasto
 
-[![Apri in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bobsilvio&repository=sidebar-card&category=integration)
+[![Apri in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bobsilvio&repository=sidebar-card&category=plugin)
 
 
 
