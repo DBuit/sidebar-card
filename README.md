@@ -42,17 +42,11 @@ A fully‑customisable **Header + Sidebar layout system for Home Assistant**, de
 
 # 📦 Installation
 
-## HACS (Recommended)
+## HACS
 
-1. Open **HACS → Frontend**
-2. Add this repo as a **Custom Repository**
-3. Install the card
-4. Add the resource:
+This integration can be installed manually or via HACS when available.
 
-```yaml
-url: /hacsfiles/sidebar-card/sidebar-card.js
-type: module
-```
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bobsilvio&repository=sidebar-card&category=integration)
 
 ---
 
