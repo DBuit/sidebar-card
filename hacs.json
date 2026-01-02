@@ -1,5 +1,5 @@
 {
     "name": "Sidebar Card",
-    "render_readme": true,
-    "filename": "sidebar-card.js"
+    "homeassistant": "2024.8.0",
+    "render_readme": true
 }
