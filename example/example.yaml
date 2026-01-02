@@ -1,0 +1,512 @@
+header:
+  enabled: true
+  sticky: true
+  height: 72
+  headerMenuStyle: wide
+  headerMenuShowLabel: true
+  headerMenuPosition: center
+  
+  
+  style: |
+    :host {
+      --header-background: rgba(15, 16, 22, 0.72);
+      --header-backdrop-filter: blur(14px);
+      --header-radius: 18px;
+    }
+
+    .header-inner {
+      background: var(--header-background) !important;
+      backdrop-filter: var(--header-backdrop-filter) !important;
+      -webkit-backdrop-filter: var(--header-backdrop-filter) !important;
+      border-radius: var(--header-radius) !important;
+      margin: 8px 10px !important;
+      padding: 6px 10px !important;
+    }
+
+    /* slot card: niente bordo/ombra */
+    .header-card-slot > * {
+      background: transparent !important;
+      box-shadow: none !important;
+      border: 0 !important;
+    }
+
+  # icone laterali (restano)
+
+#  leftMenu:
+
+#  rightMenu:
+
+  # LEFT: orario + data + meteo
+  leftCard:
+    type: horizontal-stack
+    cards:
+        - type: custom:button-card
+          show_icon: false
+          show_name: false
+          show_state: false
+          tap_action:
+            action: none
+          custom_fields:
+            time: >
+              [[[
+                const d = new Date();
+                return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              ]]]
+            meta: >
+              [[[
+                const d = new Date();
+                const dow = d.toLocaleDateString('it-IT', { weekday: 'short' });
+                const day = d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+                const wx = states['weather.forecast_casa'];
+                const st = wx?.state ?? '';
+                const t = wx?.attributes?.temperature;
+                const h = wx?.attributes?.humidity;
+                const wxLine = (t !== undefined && h !== undefined) ? `${t}°C · ${h}%` : st;
+                return `${dow} ${day} · ${wxLine}`;
+              ]]]
+          styles:
+            card:
+              - background: transparent
+              - padding: 0
+              - border-radius: 0
+            grid:
+              - grid-template-areas: '"time" "meta"'
+              - grid-template-columns: 1fr
+              - grid-template-rows: auto auto
+              - row-gap: 2px
+            custom_fields:
+              time:
+                - font-size: 34px
+                - font-weight: 500
+                - line-height: 1
+                - color: "#ffffff"
+                - text-align: left
+                - white-space: nowrap
+              meta:
+                - font-size: 13px
+                - font-weight: 600
+                - line-height: 1.1
+                - color: "rgba(255,255,255,0.72)"
+                - text-align: left
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+                - max-width: 520px
+
+  # CENTER: chip menu colorati
+  centerCard:
+    type: custom:mushroom-chips-card
+    alignment: center
+    card_mod:
+      style: |
+        :host {
+          margin: 0 !important;
+          padding: 0 !important;
+          --ha-card-margin: 0 !important;
+        }
+        ha-card {
+          background: transparent !important;
+          box-shadow: none !important;
+          border: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        mushroom-chips-card {
+          --chip-spacing: 10px !important;
+        }
+
+    chips:
+      - type: action
+        icon: mdi:home
+        content: Home
+        tap_action:
+          action: navigate
+          navigation_path: /casa-vaira/home
+        card_mod:
+          style: |
+            :host {
+              --chip-background: rgba(205, 255, 190, 0.95);
+              --chip-icon-color: black;
+              --chip-text-color: #0f172a;
+              --chip-border-radius: 999px;
+            }
+
+      - type: action
+        icon: mdi:blinds
+        content: Tapparelle
+        tap_action:
+          action: navigate
+          navigation_path: /casa-vaira/tapparelle
+        card_mod:
+          style: |
+            :host {
+              --chip-background: rgba(255, 235, 140, 0.95);
+              --chip-icon-color: #0f172a;
+              --chip-text-color: #0f172a;
+              --chip-border-radius: 999px;
+            }
+
+      - type: action
+        icon: mdi:thermometer
+        content: Airzone
+        tap_action:
+          action: navigate
+          navigation_path: /casa-vaira/airzone
+        card_mod:
+          style: |
+            :host {
+              --chip-background: rgba(160, 230, 255, 0.95);
+              --chip-icon-color: #0f172a;
+              --chip-text-color: #0f172a;
+              --chip-border-radius: 999px;
+            }
+
+      - type: action
+        icon: mdi:washing-machine
+        content: Elettro.
+        tap_action:
+          action: navigate
+          navigation_path: /casa-vaira/elettrodomestici
+        card_mod:
+          style: |
+            :host {
+              --chip-background: rgba(255, 180, 210, 0.95);
+              --chip-icon-color: #0f172a;
+              --chip-text-color: #0f172a;
+              --chip-border-radius: 999px;
+            }
+
+      - type: action
+        icon: mdi:solar-power-variant
+        content: Energia
+        tap_action:
+          action: navigate
+          navigation_path: /casa-vaira/energia
+        card_mod:
+          style: |
+            :host {
+              --chip-background: rgba(255, 200, 140, 0.95);
+              --chip-icon-color: #0f172a;
+              --chip-text-color: #0f172a;
+              --chip-border-radius: 999px;
+            }
+  
+  
+
+  # RIGHT: persona
+  rightCard:
+    type: custom:mushroom-template-card
+    entity: person.silvio
+    primary: >
+      {{ state_attr('person.silvio', 'friendly_name') or 'Silvio' }}
+    secondary: >
+      {{ states('device_tracker.iphone15') }} ·
+      🏃 {{ states('sensor.iphone15_steps') | int(0) }} passi ·
+      🔋 {{ states('sensor.iphone15_battery_level') | default('0') }}%
+    icon: >
+      {{ 'mdi:home-account' if is_state('device_tracker.iphone15', 'home') else 'mdi:walk' }}
+    layout: horizontal
+    multiline_secondary: true
+    tap_action:
+      action: more-info
+    
+
+  headerMenu:
+    - action: navigate
+      navigation_path: "/casa-vaira/home"
+      name: "Home"
+      icon: mdi:home
+      background_color: "rgba(205, 255, 190, 0.95)"
+      icon_color: "#0f172a"
+      text_color: "#0f172a"
+
+    - action: navigate
+      navigation_path: "/casa-vaira/tapparelle"
+      name: "Tapparelle"
+      icon: mdi:blinds
+      background_color: "rgba(255, 235, 140, 0.95)"
+      icon_color: "#0f172a"
+      text_color: "#0f172a"
+
+    - action: navigate
+      navigation_path: "/casa-vaira/airzone"
+      name: "Airzone"
+      icon: mdi:thermometer
+      background_color: "rgba(160, 230, 255, 0.95)"
+      icon_color: "#0f172a"
+      text_color: "#0f172a"
+      
+sidebar:
+  title: "Casa"
+  debug: false                  # se true, log in console
+  #width: 18                     # (numero) percentuale fissa
+  # oppure responsive:
+  width:
+    mobile: 0                   # % (0 = nascosta)
+    tablet: 16
+    desktop: 20
+  breakpoints:
+    mobile: 767                 # max width "mobile"
+    tablet: 1024                # max width "tablet"
+
+  hideTopMenu: true             # nasconde la top bar originale HA
+  showTopMenuOnMobile: false     # MA la rimette visibile su mobile (width <= mobile)
+  hideHassSidebar: true         # nasconde la sidebar standard di HA
+
+  clock: false                  # analogico
+  digitalClock: true            # orologio digitale
+  digitalClockWithSeconds: false
+  twelveHourVersion: false      # 12h (AM/PM) se true
+  period: false                 # mostra “AM/PM” (solo se 12h)
+
+  # Data
+  date: true                    # mostra la data
+  dateFormat: "DD MMMM"         # formato moment.js (default: "DD MMMM")
+  
+  #Menu
+  menuStyle: wide               # list | wide | buttons | grid
+  showLabel: true               # per "buttons" e "grid"
+  
+  hideOnPath:
+    - "/config"
+    - "/profile/general"
+
+
+  # ── Testo in alto (saluto, settimana, meteo) ───────────────────────────────
+  template: |
+    <li style="margin-top:6px;">
+      {% if now().hour < 12 %} Buongiorno ☕
+      {% elif now().hour < 19 %} Buon pomeriggio 👋
+      {% else %} Buonasera 🌙{% endif %}
+    </li>
+    <li>Settimana {{ now().isocalendar()[1] }}</li>
+    <li>
+      {% set wx = 'weather.forecast_casa' %}
+      ☁️ {{ states(wx) }} · {{ state_attr(wx,'temperature') }}°C · {{ state_attr(wx,'humidity') }}%
+    </li>
+  
+    
+
+  # ── Menu laterale (link viste + refresh) ───────────────────────────────────
+
+  style: |
+    .sidebar-inner {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    :host {
+      --sidebar-background: transparent !important;
+      backdrop-filter: blur(0px) !important; /* opzionale */
+      /* ============================================================
+       *  🎨 SEZIONE WIDE (Rettangolare icona + testo)
+       * ============================================================ */
+
+      --sidebar-wide-margin-y: 16px;
+      --sidebar-wide-gap: 8px;
+      --sidebar-wide-padding-x: 14px;
+
+      --sidebar-wide-height: 48px;
+      --sidebar-wide-radius: 18px;
+      --sidebar-wide-item-gap: 10px;
+
+      --sidebar-wide-bg: rgba(255,255,255,0.18);
+      --sidebar-wide-icon-color: #000000;
+      --sidebar-wide-icon-size: 22px;
+
+      --sidebar-wide-font-size: 14px;
+      --sidebar-wide-line-height: 1.2;
+      --sidebar-wide-text-color: #111111;
+      --sidebar-wide-font-weight: 500;
+
+      /* Stato attivo */
+      --sidebar-wide-active-border-width: 0px;
+      --sidebar-wide-active-border-color: transparent;
+      --sidebar-wide-active-bg: rgba(0,0,0,1);
+      --sidebar-wide-active-opacity: 0.14;
+      --sidebar-wide-active-icon-color: rgb(247,217,89);
+      --sidebar-wide-active-icon-size: 26px;
+      --sidebar-wide-active-text-color: #111111;
+
+
+
+      /* ============================================================
+       *  🟥 SEZIONE BUTTONS (quadrato + icona, label opzionale)
+       * ============================================================ */
+
+      --sidebar-button-margin-y: 16px;
+      --sidebar-button-gap: 8px;
+      --sidebar-button-item-gap: 10px;
+
+      --sidebar-button-size: 56px;
+      --sidebar-button-box-size: 56px;
+      --sidebar-button-radius: 18px;
+
+      --sidebar-button-bg: rgba(255,255,255,0.18);
+      --sidebar-button-icon-color: var(--white);
+      --sidebar-button-icon-size: 28px;
+
+      --sidebar-button-font-size: 13px;
+      --sidebar-button-line-height: 1.2;
+      --sidebar-button-text-color: var(--white);
+      --sidebar-button-font-weight: 500;
+
+      /* Stato attivo */
+      --sidebar-button-active-border-width: 3px;
+      --sidebar-button-active-border-color: #ffffff;
+      --sidebar-button-active-shadow-color: rgba(0,0,0,0.18);
+      --sidebar-button-active-icon-color: rgb(247,217,89);
+      --sidebar-button-active-text-color: var(--green, #000);
+
+
+
+      /* ============================================================
+       *  🟦 SEZIONE GRID (stile iPhone — icona sopra, testo sotto)
+       * ============================================================ */
+
+      --sidebar-grid-margin-y: 14px;
+      --sidebar-grid-gap: 12px;
+      --sidebar-grid-item-padding: 4px;
+
+      --sidebar-grid-box-size: 52px;
+      --sidebar-grid-radius: 22px;
+      --sidebar-grid-bg: rgba(255,255,255,0.15);
+
+      --sidebar-grid-icon-size: 30px;
+      --sidebar-grid-icon-color: #000000;
+
+      --sidebar-grid-label-margin-top: 6px;
+      --sidebar-grid-font-size: 14px;
+      --sidebar-grid-line-height: 1.2;
+      --sidebar-grid-font-weight: 300;
+      --sidebar-grid-text-color: var(--white, #000);
+
+      /* Stato attivo */
+      --sidebar-grid-active-border: rgba(255,255,255,0.7);
+      --sidebar-grid-active-bg: rgba(255,255,255,0.25);
+      --sidebar-grid-active-icon-color: var(--white);
+      --sidebar-grid-active-text-color: var(--green, #000);
+      
+      --sidebar-grid-columns: 3;
+      --sidebar-grid-rows: 10;
+      --sidebar-grid-row-height: 110px;
+
+
+
+      /* ============================================================
+       *  🌈 SEZIONE COMUNI (fallback generali)
+       * ============================================================ */
+
+      --sidebar-selected-bg: rgba(0,0,0,1);
+      --sidebar-icon-color: #000000;
+      --primary-text-color: #000000;
+
+    }
+
+
+    /* --- DIMENSIONE ORARIO --- */
+    .digitalClock {
+      font-size: 40px !important;
+      line-height: 1 !important;
+    }
+
+    .digitalClock.with-seconds {
+      font-size: 48px !important;
+      line-height: 1 !important;
+    }
+
+    /* --- DIMENSIONE DATA --- */
+    .date {
+      font-size: 20px !important;
+      font-weight: 400 !important;
+      margin-top: 4px !important;
+      line-height: 1.2 !important;
+    }
+  
+  sidebarMenu:
+    - action: navigate   # Home
+      navigation_path: "/casa-vaira/home"
+      name: "Home"
+      icon: mdi:home
+      background_color: "var(--blue)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Tapparelle
+      navigation_path: "/casa-vaira/tapparelle"
+      name: "Tapparelle"
+      icon: mdi:blinds
+      background_color: "var(--yellow)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Clima
+      navigation_path: "/casa-vaira/airzone"
+      name: "Clima"
+      icon: mdi:thermometer
+      background_color: "var(--cyan)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Elettrodomestici
+      navigation_path: "/casa-vaira/elettrodomestici"
+      name: "Elettrodom."
+      icon: mdi:washing-machine
+      background_color: "var(--pink)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Energia
+      navigation_path: "/casa-vaira/energia"
+      name: "Energia"
+      icon: mdi:solar-power-variant
+      background_color: "var(--orange)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Acqua
+      navigation_path: "/casa-vaira/acqua"
+      name: "Acqua"
+      icon: mdi:water
+      background_color: "var(--blue)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Telecamere
+      navigation_path: "/casa-vaira/telecamere"
+      name: "Telecamere"
+      icon: mdi:cctv
+      background_color: "var(--purple)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Calcio
+      navigation_path: "/casa-vaira/calcio"
+      name: "Calcio"
+      icon: mdi:soccer
+      background_color: "var(--green)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Settings
+      navigation_path: "/config/dashboard"
+      name: "Settings"
+      icon: mdi:cog-outline
+      background_color: "var(--grey)"
+      icon_color: "var(--black)"
+
+    - action: navigate   # Profilo
+      navigation_path: "/profile/general"
+      name: "Profilo"
+      icon: mdi:face-man-profile
+      background_color: "var(--lime)"
+      icon_color: "var(--black)"
+
+    - action: service-js
+      icon: mdi:menu
+      name: "Menu"
+      service: |
+        this.dispatchEvent(
+          new Event('hass-toggle-menu', { bubbles: true, composed: true })
+        );
+      background_color: "var(--grey)"
+      icon_color: "var(--black)"
+
+    - action: call-service  # Reload
+      service: browser_mod.refresh
+      icon: mdi:reload
+      name: "Reload"
+      background_color: "var(--grey-light)"
+      icon_color: "var(--black)"
+  
