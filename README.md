@@ -5,12 +5,21 @@
 
 ## 📸 Screenshots
 
-![Screenshot 1](img/1.png)
-![Screenshot 2](img/2.png)
-![Screenshot 3](img/3.png)
-![Screenshot 3](img/4.png)
-![Screenshot 3](img/5.png)
-![Screenshot 3](img/6.png)
+<p align="center">
+  <img src="img/1.PNG" width="48%">
+  <img src="img/2.PNG" width="48%">
+</p>
+
+<p align="center">
+  <img src="img/3.PNG" width="48%">
+  <img src="img/4.PNG" width="48%">
+</p>
+
+<p align="center">
+  <img src="img/5.PNG" width="48%">
+  <img src="img/6.PNG" width="48%">
+</p>
+
 
 A fully‑customisable **Header + Sidebar layout system for Home Assistant**, designed to be modern, flexible and responsive — while keeping full compatibility with Lovelace dashboards.
 
