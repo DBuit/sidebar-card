@@ -369,5 +369,6 @@ style: |
 ---
 
 # ❤️ Credits
+Thanks DBuit for original work
 
 Built for the HA community 🙂
