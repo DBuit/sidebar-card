@@ -494,6 +494,8 @@ class SidebarCard extends LitElement {
         const [domain, service] = tapAction.service.split('.', 2);
         this.hass.callService(domain, service, tapAction.service_data);
         forwardHaptic('success');
+        break;
+      }
       case 'service-js':
         if (tapAction.service) {
           try {
@@ -510,7 +512,6 @@ class SidebarCard extends LitElement {
           error2console('service-js', 'no service code found');
         }
         break;
-      }
     }
   }
 
@@ -1042,9 +1043,15 @@ function updateStyling(appLayout: any, sidebarConfig: any) {
   appLayout.querySelector('#customSidebarStyle').textContent = createCSS(sidebarConfig, width);
 
   const root = getRoot();
+  // SAFETY CHECK: the HA UI root (or its shadowRoot) may not be ready yet — e.g. a
+  // resize event firing mid-render in Firefox. Bail out instead of crashing. Fixes #149.
+  if (!root || !root.shadowRoot) {
+    error2console('updateStyling', 'Root element or shadowRoot not found!');
+    return;
+  }
   const hassHeader = root.shadowRoot.querySelector('.header');
   log2console('updateStyling', hassHeader ? 'Home Assistant header found!' : 'Home Assistant header not found!');
-  const hassFooter = root.shadowRoot.querySelector('ch-footer' || root.shadowRoot.querySelector('app-footer'));
+  const hassFooter = root.shadowRoot.querySelector('ch-footer') || root.shadowRoot.querySelector('app-footer');
   log2console('updateStyling', hassFooter ? 'Home Assistant footer found!' : 'Home Assistant footer not found!');
   const offParam = getParameterByName('sidebarOff');
   const view = root.shadowRoot.getElementById('view');
@@ -1110,8 +1117,10 @@ function watchLocationChange() {
   setTimeout(() => {
     window.addEventListener('location-changed', () => {
       const root = getRoot();
-      if (!root) return; // location changed before finishing dom rendering
+      // location changed before finishing dom rendering — bail if root/shadowRoot/layout aren't ready
+      if (!root || !root.shadowRoot) return;
       const appLayout = root.shadowRoot.querySelector('div');
+      if (!appLayout) return;
       const customSidebarWrapper = appLayout.querySelector('#customSidebarWrapper');
       if (!customSidebarWrapper) {
         buildSidebar();
