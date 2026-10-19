@@ -15,7 +15,8 @@ const SIDEBAR_CARD_VERSION = '0.2.4';
 // ###   Import dependencies
 // ##########################################################################################
 
-import { css, html, LitElement } from 'lit-element';
+import { css, html, svg, LitElement } from 'lit-element';
+import { repeat } from 'lit-html/directives/repeat';
 import { moreInfo } from 'card-tools/src/more-info';
 import { hass, provideHass } from 'card-tools/src/hass';
 import { subscribeRenderTemplate } from 'card-tools/src/templates';
@@ -49,10 +50,60 @@ interface NotificationEntity {
   created_at: string;
 }
 
+type NotificationSeverity = 'error' | 'warning' | 'info' | 'success';
+
+interface NotificationGroup {
+  key: string;
+  ids: string[];
+  title: string;
+  message: string;
+  created_at: string;
+  severity: NotificationSeverity;
+}
+
+const NOTIFICATION_SEVERITY_RANK: { [key in NotificationSeverity]: number } = {
+  error: 0,
+  warning: 1,
+  info: 2,
+  success: 3
+};
+
+// Close the panel by itself after this long without interaction, so a wall
+// tablet never stays stuck on the notification list.
+const NOTIFICATION_PANEL_IDLE_MS = 30000;
+const NOTIFICATION_DISMISS_ANIMATION_MS = 200;
+const NOTIFICATION_STACK_PEEK_PX = 9;
+
+const NOTIFICATION_ICONS: { [key in NotificationSeverity]: any } = {
+  error: svg`<circle cx="12" cy="12" r="10"></circle><path d="M15 9l-6 6M9 9l6 6"></path>`,
+  warning: svg`<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path>`,
+  info: svg`<circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path>`,
+  success: svg`<circle cx="12" cy="12" r="10"></circle><path d="m8 12 3 3 5-6"></path>`
+};
+
+const CLOSE_ICON = html`
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <path d="M18 6 6 18M6 6l12 12"></path>
+  </svg>
+`;
+
 class NotificationsElement extends LitElement {
   hass: any;
   notifications: NotificationEntity[] = [];
+  open = false;
+
+  private _byId: Map<string, NotificationEntity> = new Map();
   private _unsubscribe: (() => void) | null = null;
+  private _subscribing = false;
+  private _expandedKeys: Set<string> = new Set();
+  private _dismissingKeys: Set<string> = new Set();
+  private _idleTimer: number | null = null;
+  private _clockTimer: number | null = null;
+  private _sidebarInner: HTMLElement | null = null;
+  private _sidebarOverflow = '';
+  private _onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && this.open) this._setOpen(false);
+  };
 
   /* **************************************** *
    *        Element's public properties       *
@@ -60,7 +111,8 @@ class NotificationsElement extends LitElement {
   static get properties() {
     return {
       hass: { type: Object },
-      notifications: { type: Array }
+      notifications: { type: Array, attribute: false },
+      open: { type: Boolean, reflect: true }
     };
   }
 
@@ -70,9 +122,20 @@ class NotificationsElement extends LitElement {
     this.notifications = [];
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    // keep the "10m ago" labels fresh
+    this._clockTimer = window.setInterval(() => {
+      if (this.notifications.length) this.requestUpdate();
+    }, 60000);
+  }
+
   protected updated(changedProperties): void {
-    if (changedProperties.has('hass') && this.hass?.connection && !this._unsubscribe) {
+    if (changedProperties.has('hass') && this.hass?.connection && !this._unsubscribe && !this._subscribing) {
       this._subscribeNotifications();
+    }
+    if (changedProperties.has('notifications') && this.open && this.notifications.length === 0) {
+      this._setOpen(false);
     }
   }
 
@@ -82,157 +145,305 @@ class NotificationsElement extends LitElement {
       this._unsubscribe();
       this._unsubscribe = null;
     }
+    if (this._clockTimer) window.clearInterval(this._clockTimer);
+    this._clockTimer = null;
+    if (this.open) this._setOpen(false);
   }
 
+  /* **************************************** *
+   *               Subscription               *
+   * **************************************** */
+
   private async _subscribeNotifications(): Promise<void> {
-    this._unsubscribe = await this.hass.connection.subscribeMessage(
-      (message: any) => {
-        if (message.type === 'current') {
-          this.notifications = (Object.values(message.notifications) as NotificationEntity[])
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        } else if (message.type === 'added') {
-          this.notifications = [...this.notifications, ...(Object.values(message.notifications) as NotificationEntity[])]
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        } else if (message.type === 'removed') {
-          const removedIds = new Set(Object.keys(message.notifications));
-          this.notifications = this.notifications.filter(n => !removedIds.has(n.notification_id));
-        }
-      },
-      { type: 'persistent_notification/subscribe' }
+    this._subscribing = true;
+    try {
+      this._unsubscribe = await this.hass.connection.subscribeMessage(
+        (message: any) => this._handleMessage(message),
+        { type: 'persistent_notification/subscribe' }
+      );
+    } catch (err) {
+      console.warn('sidebar-card: could not subscribe to notifications', err);
+    } finally {
+      this._subscribing = false;
+    }
+  }
+
+  // Key everything by notification_id: HA re-sends an existing id as `added`
+  // or `updated` (e.g. repeated failed logins reuse `http-login`), so appending
+  // would render the same notification more than once.
+  private _handleMessage(message: any): void {
+    const changed = (Object.values(message.notifications || {}) as NotificationEntity[]);
+    if (message.type === 'current') {
+      this._byId.clear();
+    }
+    if (message.type === 'removed') {
+      Object.keys(message.notifications || {}).forEach(id => this._byId.delete(id));
+    } else {
+      changed.forEach(n => this._byId.set(n.notification_id, n));
+    }
+    this.notifications = Array.from(this._byId.values());
+  }
+
+  /* **************************************** *
+   *                 Helpers                  *
+   * **************************************** */
+
+  private _severity(n: NotificationEntity): NotificationSeverity {
+    const text = `${n.title || ''} ${n.notification_id || ''}`.toLowerCase();
+    if (/invalid|error|failed|http-login|unavailable|offline/.test(text)) return 'error';
+    if (/success|completed|finished/.test(text)) return 'success';
+    if (/update|available|discover|new device|release/.test(text)) return 'info';
+    return 'warning';
+  }
+
+  // Same title = same thing happening again; show it once with a count.
+  private _groups(): NotificationGroup[] {
+    const groups = new Map<string, NotificationGroup>();
+    this.notifications.forEach(n => {
+      const key = (n.title || n.notification_id).trim();
+      const existing = groups.get(key);
+      if (!existing) {
+        groups.set(key, {
+          key,
+          ids: [n.notification_id],
+          title: n.title || 'Notification',
+          message: n.message,
+          created_at: n.created_at,
+          severity: this._severity(n)
+        });
+        return;
+      }
+      existing.ids.push(n.notification_id);
+      if (new Date(n.created_at).getTime() > new Date(existing.created_at).getTime()) {
+        existing.created_at = n.created_at;
+        existing.message = n.message;
+      }
+    });
+    // Most severe first, then newest: a failed login stays on top of the stack
+    // even if an update notice arrives after it.
+    return Array.from(groups.values()).sort(
+      (a, b) =>
+        NOTIFICATION_SEVERITY_RANK[a.severity] - NOTIFICATION_SEVERITY_RANK[b.severity] ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }
 
-  private _getNotificationIcon(title: string) {
-    const lowerTitle = title.toLowerCase();
-    if (lowerTitle.includes('invalid') || lowerTitle.includes('error') || lowerTitle.includes('failed')) {
-      return html`
-        <svg class="notification-icon error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="15" y1="9" x2="9" y2="15"></line>
-          <line x1="9" y1="9" x2="15" y2="15"></line>
-        </svg>
-      `;
-    }
-    if (lowerTitle.includes('update') || lowerTitle.includes('available')) {
-      return html`
-        <svg class="notification-icon info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="M12 8v4M12 16h.01"></path>
-        </svg>
-      `;
-    }
-    if (lowerTitle.includes('success') || lowerTitle.includes('completed')) {
-      return html`
-        <svg class="notification-icon success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="m9,12 3,3 8-8"></path>
-        </svg>
-      `;
-    }
-    return html`
-      <svg class="notification-icon warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="m21.73,18-8-14a2,2 0 0,0-3.48,0l-8,14A2,2 0 0,0,4,21H20A2,2 0 0,0,21.73,18Z"></path>
-        <line x1="12" y1="9" x2="12" y2="13"></line>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-      </svg>
-    `;
-  }
-
   private _getTimeAgo(createdAt: string): string {
-    const now = new Date();
-    const created = new Date(createdAt);
-    const diffInMinutes = Math.floor((now.getTime() - created.getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
-    
+    const diffInMinutes = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+    if (isNaN(diffInMinutes) || diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    return `${Math.floor(diffInHours / 24)}d ago`;
   }
 
+  // Notification text comes from integrations and automations, so escape it
+  // first and then allow only a small markdown subset (bold, code, links, bullets).
   private _formatMessage(message: string): string {
     if (!message) return '';
-    
+    const escape = (s: string) =>
+      s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    const inline = (s: string) =>
+      escape(s)
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, text, href) => {
+          if (/^https?:\/\//i.test(href)) return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+          if (href.startsWith('/')) return `<a href="${href}">${text}</a>`;
+          return text;
+        });
+
     return message
       .split('\n')
-      .map((line: string) => {
-        if (line.trim().startsWith('•')) {
-          return `<div class="bullet-point">• ${line.replace('•', '').trim()}</div>`;
-        }
-        return line.trim() ? `<div>${line}</div>` : '';
+      .map(line => line.trim())
+      .filter(line => line)
+      .map(line => {
+        const bullet = line.match(/^(?:[•*-])\s+(.*)$/);
+        return bullet ? `<div class="bullet-point">• ${inline(bullet[1])}</div>` : `<div>${inline(line)}</div>`;
       })
-      .filter((line: string) => line)
       .join('');
   }
 
-  private _dismissNotification(notificationId: string): void {
-    if (!this.hass) return;
-    this.hass.callService('persistent_notification', 'dismiss', {
-      notification_id: notificationId
-    });
+  /* **************************************** *
+   *                 Actions                  *
+   * **************************************** */
+
+  private _dismissGroup(group: NotificationGroup, e?: Event): void {
+    if (e) e.stopPropagation();
+    if (!this.hass || this._dismissingKeys.has(group.key)) return;
+    this._dismissingKeys.add(group.key);
+    this.requestUpdate();
+    window.setTimeout(() => {
+      group.ids.forEach(id =>
+        this.hass.callService('persistent_notification', 'dismiss', { notification_id: id })
+      );
+      this._dismissingKeys.delete(group.key);
+      this._expandedKeys.delete(group.key);
+      this.requestUpdate();
+    }, NOTIFICATION_DISMISS_ANIMATION_MS);
   }
 
   private _dismissAll(): void {
-    if (!this.hass || !this.notifications.length) return;
-    this.notifications.forEach((notification: NotificationEntity) => {
-      this._dismissNotification(notification.notification_id);
-    });
+    if (!this.hass) return;
+    this.notifications.forEach(n =>
+      this.hass.callService('persistent_notification', 'dismiss', { notification_id: n.notification_id })
+    );
+  }
+
+  private _toggleMessage(group: NotificationGroup, e: Event): void {
+    if ((e.target as HTMLElement).closest('a')) return; // let links work
+    if (this._expandedKeys.has(group.key)) this._expandedKeys.delete(group.key);
+    else this._expandedKeys.add(group.key);
+    this.requestUpdate();
+  }
+
+  private _onStackActivate(e: Event): void {
+    if ((e.target as HTMLElement).closest('a')) return;
+    this._setOpen(true);
+  }
+
+  private _onStackKeyDown(e: KeyboardEvent): void {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      this._setOpen(true);
+    }
+  }
+
+  private _setOpen(open: boolean): void {
+    if (open === this.open) return;
+    if (open) {
+      // .sidebar-inner is position:fixed, so it is the containing block for the
+      // absolutely positioned panel. It also scrolls, so pin the panel to the
+      // visible area and lock scrolling while the panel is open.
+      this._sidebarInner = this.closest('.sidebar-inner') as HTMLElement | null;
+      if (this._sidebarInner) {
+        this.style.setProperty('--ns-panel-top', `${this._sidebarInner.scrollTop}px`);
+        this._sidebarOverflow = this._sidebarInner.style.overflow;
+        this._sidebarInner.style.overflow = 'hidden';
+      }
+      window.addEventListener('keydown', this._onKeyDown);
+      this.open = true;
+      this._bumpIdle();
+      this.updateComplete.then(() => {
+        const close = this.shadowRoot?.querySelector('.panel-close') as HTMLElement | null;
+        if (close) close.focus({ preventScroll: true });
+      });
+    } else {
+      this.open = false;
+      if (this._sidebarInner) this._sidebarInner.style.overflow = this._sidebarOverflow;
+      this._sidebarInner = null;
+      window.removeEventListener('keydown', this._onKeyDown);
+      if (this._idleTimer) window.clearTimeout(this._idleTimer);
+      this._idleTimer = null;
+    }
+  }
+
+  private _bumpIdle(): void {
+    if (!this.open) return;
+    if (this._idleTimer) window.clearTimeout(this._idleTimer);
+    this._idleTimer = window.setTimeout(() => this._setOpen(false), NOTIFICATION_PANEL_IDLE_MS);
+  }
+
+  /* **************************************** *
+   *                 Rendering                *
+   * **************************************** */
+
+  private _renderCard(group: NotificationGroup, opts: { inStack: boolean; moreCount?: number }) {
+    const expanded = this._expandedKeys.has(group.key);
+    const classes = [
+      'card',
+      group.severity,
+      expanded ? 'expanded' : '',
+      this._dismissingKeys.has(group.key) ? 'dismissing' : ''
+    ].join(' ');
+    return html`
+      <div class="${classes}">
+        <div class="card-head">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            ${NOTIFICATION_ICONS[group.severity]}
+          </svg>
+          <div class="title-wrap">
+            <h3 class="title">
+              ${group.title}${group.ids.length > 1 ? html`<span class="count-pill">×${group.ids.length}</span>` : ''}
+            </h3>
+            <div class="meta">${this._getTimeAgo(group.created_at)}</div>
+          </div>
+          <button class="card-close" aria-label="Dismiss ${group.title}"
+            @click="${(e: Event) => this._dismissGroup(group, e)}">
+            ${CLOSE_ICON}
+          </button>
+        </div>
+        <div class="msg" .innerHTML="${this._formatMessage(group.message)}"
+          @click="${opts.inStack ? null : (e: Event) => this._toggleMessage(group, e)}"></div>
+        ${opts.moreCount
+          ? html`
+              <div class="stack-hint">
+                <span class="more">+${opts.moreCount} more</span>
+                <span>Tap to view all</span>
+              </div>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
+  private _renderPanel(groups: NotificationGroup[]) {
+    return html`
+      <div class="panel ${this.open ? 'open' : ''}" role="dialog" aria-modal="true"
+        aria-labelledby="ns-panel-title" aria-hidden="${this.open ? 'false' : 'true'}"
+        @pointerdown="${this._bumpIdle}" @scroll="${this._bumpIdle}">
+        <div class="panel-inner">
+          <div class="panel-head">
+            <h2 id="ns-panel-title">Notifications<span class="panel-count">${groups.length}</span></h2>
+            <button class="panel-close" aria-label="Close notifications" @click="${() => this._setOpen(false)}">
+              ${CLOSE_ICON}
+            </button>
+          </div>
+          <div class="panel-list" @scroll="${this._bumpIdle}">
+            ${repeat(groups, g => g.key, g => this._renderCard(g, { inStack: false }))}
+          </div>
+          <div class="panel-foot">
+            <button class="clear-all" @click="${this._dismissAll}">Clear all</button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   protected render() {
-    if (!this.notifications || this.notifications.length === 0) {
-      return ``;
-    }
+    const groups = this._groups();
+    if (!groups.length) return html``;
+
+    const stacked = groups.length > 1;
+    // only the first three can be seen in the stack; the rest live in the panel
+    const visible = stacked ? groups.slice(0, 3) : groups;
+    const peek = stacked ? Math.min(groups.length - 1, 2) * NOTIFICATION_STACK_PEEK_PX : 0;
 
     return html`
-      <div class="notifications-container">
-        ${this.notifications.map((notification: NotificationEntity) => html`
-          <div class="notification-card">
-            <div class="notification-header">
-              <div class="notification-title-row">
-                ${this._getNotificationIcon(notification.title)}
-                <h3 class="notification-title">${notification.title}</h3>
+      <div class="ns ${stacked ? 'stacked' : 'single'}">
+        ${stacked
+          ? html`
+              <div class="ns-list" style="--peek: ${peek}px" role="button" tabindex="0"
+                aria-label="Show all ${groups.length} notifications"
+                @click="${this._onStackActivate}" @keydown="${this._onStackKeyDown}">
+                ${repeat(visible, g => g.key, (g, i) =>
+                  this._renderCard(g, { inStack: true, moreCount: i === 0 ? groups.length - 1 : 0 })
+                )}
               </div>
-              <button
-                class="dismiss-icon-btn"
-                @click="${() => this._dismissNotification(notification.notification_id)}"
-                aria-label="Dismiss notification"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-            
-            <div class="notification-message" .innerHTML="${this._formatMessage(notification.message)}">
-            </div>
-            
-            <div class="notification-footer">
-              <span class="notification-time">
-                ${this._getTimeAgo(notification.created_at)}
-              </span>
-              <button
-                class="dismiss-btn"
-                @click="${() => this._dismissNotification(notification.notification_id)}"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        `)}
-        
-        ${this.notifications.length > 1 ? html`
-          <div class="dismiss-all-container">
-            <button class="dismiss-all-btn" @click="${this._dismissAll}">
-              Dismiss All
-            </button>
-          </div>
-        ` : ''}
+            `
+          : html`
+              <div class="ns-list">
+                ${repeat(visible, g => g.key, g => this._renderCard(g, { inStack: false }))}
+              </div>
+            `}
       </div>
+      ${stacked || this.open ? this._renderPanel(groups) : ''}
     `;
   }
 
@@ -241,170 +452,372 @@ class NotificationsElement extends LitElement {
       :host {
         display: block;
         width: 100%;
+        /* themable; override from the card's style: option */
+        --ns-text: var(--sidebar-text-color, #f1f5f9);
+        --ns-text-2: rgba(241, 245, 249, 0.72);
+        --ns-text-3: rgba(241, 245, 249, 0.5);
+        --ns-card-bg: var(--sidebar-notification-background, #18263f);
+        --ns-card-border: rgba(255, 255, 255, 0.08);
+        --ns-scrim: var(--sidebar-notification-scrim, rgba(9, 16, 31, 0.86));
+        --ns-error: #ef4444;
+        --ns-warning: #f59e0b;
+        --ns-info: #3b82f6;
+        --ns-success: #10b981;
+        /* no position here: the panel must resolve against .sidebar-inner */
       }
 
-      .notifications-container {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+      .ns {
         margin: 20px 0;
       }
 
-      .notification-card {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 16px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      .ns-list {
+        position: relative;
+        display: grid;
       }
 
-      .no-notifications {
-        text-align: center;
-        padding: 24px 16px;
+      .ns.stacked .ns-list {
+        cursor: pointer;
+        padding-bottom: var(--peek, 0px);
+        border-radius: 14px;
+        outline: none;
       }
 
-      .no-notifications-title {
-        color: var(--sidebar-text-color, #fff);
-        margin: 8px 0 4px 0;
-        font-size: 16px;
-        font-weight: 500;
+      .ns.stacked .ns-list:focus-visible {
+        box-shadow: 0 0 0 2px var(--ns-info);
       }
 
-      .no-notifications-subtitle {
-        color: rgba(255, 255, 255, 0.7);
-        margin: 0;
-        font-size: 14px;
+      /* ---------- card ---------- */
+      .card {
+        --sev: var(--ns-warning);
+        position: relative;
+        grid-area: 1 / 1;
+        background: linear-gradient(
+            color-mix(in srgb, var(--sev) 10%, transparent),
+            color-mix(in srgb, var(--sev) 10%, transparent)
+          ),
+          var(--ns-card-bg);
+        border: 1px solid var(--ns-card-border);
+        border-radius: 14px;
+        padding: 12px 8px 12px 14px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+        overflow: hidden;
+        transform-origin: bottom center;
+        flex-shrink: 0;
+        transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.28s ease;
       }
 
-      .notification-header {
+      /* severity accent bar */
+      .card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--sev);
+      }
+
+      .card.error {
+        --sev: var(--ns-error);
+      }
+      .card.warning {
+        --sev: var(--ns-warning);
+      }
+      .card.info {
+        --sev: var(--ns-info);
+      }
+      .card.success {
+        --sev: var(--ns-success);
+      }
+
+      .card.dismissing {
+        opacity: 0 !important;
+        transform: translateX(40px) !important;
+      }
+
+      /* ---------- stacked: cards share one grid cell, back cards peek out ---------- */
+      .ns.stacked .card:nth-child(1) {
+        z-index: 3;
+      }
+      .ns.stacked .card:nth-child(2) {
+        z-index: 2;
+        transform: translateY(9px) scale(0.95);
+        opacity: 0.9;
+      }
+      .ns.stacked .card:nth-child(3) {
+        z-index: 1;
+        transform: translateY(18px) scale(0.9);
+        opacity: 0.65;
+      }
+      /* back cards are just edges: take them out of flow so only the front
+         card sets the stack's height */
+      .ns.stacked .card:not(:first-child) {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: calc(100% - var(--peek, 0px));
+        box-sizing: border-box;
+      }
+      .ns.stacked .card:not(:first-child) * {
+        visibility: hidden;
+      }
+
+      .card-head {
         display: flex;
         align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 12px;
+        gap: 10px;
       }
 
-      .notification-title-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex: 1;
-      }
-
-      .notification-icon {
-        width: 20px;
-        height: 20px;
+      .icon {
+        width: 18px;
+        height: 18px;
         flex-shrink: 0;
+        margin-top: 1px;
+        color: var(--sev);
       }
 
-      .notification-icon.error {
-        color: #ef4444;
+      .title-wrap {
+        flex: 1;
+        min-width: 0;
       }
 
-      .notification-icon.info {
-        color: #3b82f6;
-      }
-
-      .notification-icon.success {
-        color: #10b981;
-      }
-
-      .notification-icon.warning {
-        color: #f59e0b;
-      }
-
-      .notification-title {
-        color: var(--sidebar-text-color, #fff);
+      .title {
         margin: 0;
         font-size: 14px;
-        font-weight: 500;
-        line-height: 1.4;
+        font-weight: 600;
+        line-height: 1.35;
+        color: var(--ns-text);
       }
 
-      .dismiss-icon-btn {
+      .meta {
+        font-size: 12px;
+        color: var(--ns-text-3);
+        margin-top: 2px;
+      }
+
+      .count-pill {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: var(--sev);
+        color: #0b1220;
+        margin-left: 6px;
+        vertical-align: 1px;
+      }
+
+      .card-close {
+        width: 32px;
+        height: 32px;
+        margin: -6px -2px 0 0;
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
         background: none;
         border: none;
+        padding: 0;
+        color: var(--ns-text-3);
         cursor: pointer;
-        padding: 4px;
-        border-radius: 8px;
-        transition: background-color 0.2s ease;
-        flex-shrink: 0;
       }
 
-      .dismiss-icon-btn:hover {
+      .card-close:active {
         background: rgba(255, 255, 255, 0.1);
+        color: var(--ns-text);
       }
 
-      .dismiss-icon-btn svg {
+      .card-close svg,
+      .panel-close svg {
         width: 16px;
         height: 16px;
-        color: rgba(255, 255, 255, 0.7);
       }
 
-      .dismiss-icon-btn:hover svg {
-        color: var(--sidebar-text-color, #fff);
+      .msg {
+        margin: 8px 6px 0 28px;
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--ns-text-2);
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
       }
 
-      .notification-message {
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 14px;
-        line-height: 1.5;
-        margin-bottom: 12px;
+      .ns.single .msg,
+      .panel .msg {
+        cursor: pointer;
       }
 
-      .notification-message .bullet-point {
-        margin-left: 16px;
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        margin-bottom: 4px;
+      .card.expanded .msg {
+        -webkit-line-clamp: unset;
+        display: block;
       }
 
-      .notification-footer {
+      .msg .bullet-point {
+        margin-left: 4px;
+      }
+
+      .msg a {
+        color: var(--ns-text);
+      }
+
+      .msg code {
+        font-size: 12px;
+        padding: 0 4px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .stack-hint {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
+        margin: 10px 6px 0 28px;
+        font-size: 12px;
+        color: var(--ns-text-3);
       }
 
-      .notification-time {
-        color: rgba(255, 255, 255, 0.6);
-        font-size: 12px;
-      }
-
-      .dismiss-btn {
-        background: #fbbf24;
-        color: #000;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 8px;
-        font-size: 12px;
+      .more {
+        color: var(--ns-text-2);
         font-weight: 500;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
       }
 
-      .dismiss-btn:hover {
-        background: #f59e0b;
+      /* ---------- panel: covers the whole sidebar ---------- */
+      .panel {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: var(--ns-panel-top, 0px);
+        height: 100%;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        padding: 16px 12px 12px;
+        background: var(--ns-scrim);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.22s ease, visibility 0s linear 0.22s;
       }
 
-      .dismiss-all-container {
-        text-align: center;
-        padding-top: 8px;
+      .panel.open {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.22s ease;
       }
 
-      .dismiss-all-btn {
-        background: none;
+      .panel-inner {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        transform: translateY(32px) scale(0.97);
+        transform-origin: top center;
+        transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .panel.open .panel-inner {
+        transform: none;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 2px 12px 6px;
+        flex-shrink: 0;
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--ns-text);
+      }
+
+      .panel-count {
+        font-size: 12px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+        margin-left: 8px;
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--ns-text-2);
+        vertical-align: 2px;
+      }
+
+      .panel-close {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
         border: none;
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 14px;
+        padding: 0;
+        color: var(--ns-text);
         cursor: pointer;
-        transition: color 0.2s ease;
       }
 
-      .dismiss-all-btn:hover {
-        color: var(--sidebar-text-color, #fff);
+      .panel-close svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .panel-close:active {
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .panel-list {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 2px 2px 12px;
+        scrollbar-width: thin;
+      }
+
+      .panel-list .card {
+        grid-area: auto;
+      }
+
+      .panel-foot {
+        flex-shrink: 0;
+        padding-top: 8px;
+        border-top: 1px solid var(--ns-card-border);
+      }
+
+      .clear-all {
+        width: 100%;
+        min-height: 44px;
+        border-radius: 12px;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--ns-card-border);
+        color: var(--ns-text-2);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .clear-all:active {
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--ns-text);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .card,
+        .panel,
+        .panel-inner {
+          transition: none;
+        }
       }
     `;
   }
