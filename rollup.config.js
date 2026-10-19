@@ -10,7 +10,7 @@ import url from '@rollup/plugin-url';
 const dev = process.env.ROLLUP_WATCH;
 
 const serveopts = {
-  contentBase: ['./dist'],
+  contentBase: ['.'],
   host: '0.0.0.0',
   port: 5000,
   allowCrossOrigin: true,

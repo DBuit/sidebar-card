@@ -9,7 +9,7 @@
 // ##########################################################################################
 
 const SIDEBAR_CARD_TITLE = 'SIDEBAR-CARD';
-const SIDEBAR_CARD_VERSION = '0.1.9.7.7';
+const SIDEBAR_CARD_VERSION = '0.2.4';
 
 // ##########################################################################################
 // ###   Import dependencies
@@ -43,15 +43,16 @@ interface Hass {
 }
 
 interface NotificationEntity {
+  notification_id: string;
   title: string;
   message: string;
-  id: string;
   created_at: string;
 }
 
 class NotificationsElement extends LitElement {
   hass: any;
-  notifications: any = [];
+  notifications: NotificationEntity[] = [];
+  private _unsubscribe: (() => void) | null = null;
 
   /* **************************************** *
    *        Element's public properties       *
@@ -70,28 +71,35 @@ class NotificationsElement extends LitElement {
   }
 
   protected updated(changedProperties): void {
-    if (changedProperties.has('hass') && this.hass) {
-      this._updateNotifications();
+    if (changedProperties.has('hass') && this.hass?.connection && !this._unsubscribe) {
+      this._subscribeNotifications();
     }
   }
 
-  private _updateNotifications(): void {
-    if (!this.hass || !this.hass.states) return;
-    
-    const filteredNotifications = Object.values(this.hass.states)
-      .filter((entity: any) => 
-        entity.entity_id.startsWith('sensor.template_persistent_notifications_overview') &&
-        entity.attributes.notifications !== undefined)
-      .map((entity: any) => entity.attributes.notifications);
-    
-    console.log(`filteredNotifications=${filteredNotifications}`)
-    if (filteredNotifications) {
-      this.notifications = filteredNotifications[0] as NotificationEntity[];
-      this.notifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    } else {
-      this.notifications = []
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._unsubscribe) {
+      this._unsubscribe();
+      this._unsubscribe = null;
     }
-    this.requestUpdate();
+  }
+
+  private async _subscribeNotifications(): Promise<void> {
+    this._unsubscribe = await this.hass.connection.subscribeMessage(
+      (message: any) => {
+        if (message.type === 'current') {
+          this.notifications = (Object.values(message.notifications) as NotificationEntity[])
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        } else if (message.type === 'added') {
+          this.notifications = [...this.notifications, ...(Object.values(message.notifications) as NotificationEntity[])]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        } else if (message.type === 'removed') {
+          const removedIds = new Set(Object.keys(message.notifications));
+          this.notifications = this.notifications.filter(n => !removedIds.has(n.notification_id));
+        }
+      },
+      { type: 'persistent_notification/subscribe' }
+    );
   }
 
   private _getNotificationIcon(title: string) {
@@ -162,7 +170,6 @@ class NotificationsElement extends LitElement {
 
   private _dismissNotification(notificationId: string): void {
     if (!this.hass) return;
-    
     this.hass.callService('persistent_notification', 'dismiss', {
       notification_id: notificationId
     });
@@ -170,9 +177,8 @@ class NotificationsElement extends LitElement {
 
   private _dismissAll(): void {
     if (!this.hass || !this.notifications.length) return;
-    
     this.notifications.forEach((notification: NotificationEntity) => {
-      this._dismissNotification(notification.id);
+      this._dismissNotification(notification.notification_id);
     });
   }
 
@@ -190,9 +196,9 @@ class NotificationsElement extends LitElement {
                 ${this._getNotificationIcon(notification.title)}
                 <h3 class="notification-title">${notification.title}</h3>
               </div>
-              <button 
+              <button
                 class="dismiss-icon-btn"
-                @click="${() => this._dismissNotification(notification.id)}"
+                @click="${() => this._dismissNotification(notification.notification_id)}"
                 aria-label="Dismiss notification"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -211,7 +217,7 @@ class NotificationsElement extends LitElement {
               </span>
               <button
                 class="dismiss-btn"
-                @click="${() => this._dismissNotification(notification.id)}"
+                @click="${() => this._dismissNotification(notification.notification_id)}"
               >
                 Dismiss
               </button>
@@ -406,6 +412,306 @@ class NotificationsElement extends LitElement {
 
 customElements.define('notifications-element', NotificationsElement);
 
+
+// ##########################################################################################
+// ###   Glance Bar - at-a-glance status icons
+// ##########################################################################################
+
+type GlanceConditionType =
+  | 'always' | 'state' | 'state_not'
+  | 'numeric_above' | 'numeric_below'
+  | 'time_after' | 'time_before'
+  | 'sun_below_horizon' | 'sun_above_horizon';
+
+interface GlanceCondition {
+  condition: GlanceConditionType;
+  entity?: string;
+  state?: string | string[];
+  threshold?: number;
+  after?: string;
+  before?: string;
+}
+
+interface GlanceBadge {
+  condition?: GlanceConditionType;
+  entity?: string;
+  state?: string | string[];
+  threshold?: number;
+  after?: string;
+  before?: string;
+  icon?: string;
+  color?: string;
+  label?: 'state' | 'attribute';
+  label_attribute?: string;
+  label_max_length?: number;
+}
+
+interface GlanceItem {
+  entity: string;
+  icon: string;
+  name?: string;
+  color?: string;
+  show?: GlanceCondition | GlanceConditionType;
+  badge?: GlanceBadge;
+  tap_action?: { action: string; entity?: string; navigation_path?: string; url_path?: string };
+}
+
+class GlanceBarElement extends LitElement {
+  hass: any;
+  items: GlanceItem[] = [];
+  private _tickInterval: any = null;
+
+  static get properties() {
+    return { hass: { type: Object }, items: { type: Array } };
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._tickInterval = setInterval(() => this.requestUpdate(), 30000);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearInterval(this._tickInterval);
+    this._tickInterval = null;
+  }
+
+  private _minutesNow(): number {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  }
+
+  private _parseMinutes(timeStr: string): number {
+    const [h, m] = timeStr.split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+  }
+
+  private _evalCondition(cond: GlanceCondition | GlanceConditionType | undefined, defaultEntity: string): boolean {
+    if (!cond || cond === 'always') return true;
+
+    const c: GlanceCondition = typeof cond === 'string' ? { condition: cond } : cond;
+    const entityId = c.entity || defaultEntity;
+    const entityState = this.hass?.states?.[entityId];
+
+    switch (c.condition) {
+      case 'always': return true;
+      case 'state': {
+        if (!entityState) return false;
+        const targets = Array.isArray(c.state) ? c.state : [c.state as string];
+        return targets.includes(entityState.state);
+      }
+      case 'state_not': {
+        if (!entityState) return true;
+        const targets = Array.isArray(c.state) ? c.state : [c.state as string];
+        return !targets.includes(entityState.state);
+      }
+      case 'numeric_above':
+        return entityState && c.threshold !== undefined ? parseFloat(entityState.state) > c.threshold : false;
+      case 'numeric_below':
+        return entityState && c.threshold !== undefined ? parseFloat(entityState.state) < c.threshold : false;
+      case 'time_after':
+        return c.after ? this._minutesNow() >= this._parseMinutes(c.after) : false;
+      case 'time_before':
+        return c.before ? this._minutesNow() < this._parseMinutes(c.before) : false;
+      case 'sun_below_horizon':
+        return this.hass?.states?.['sun.sun']?.state === 'below_horizon';
+      case 'sun_above_horizon':
+        return this.hass?.states?.['sun.sun']?.state === 'above_horizon';
+      default:
+        return false;
+    }
+  }
+
+  private _evalBadge(badge: GlanceBadge | undefined, defaultEntity: string): boolean {
+    if (!badge) return false;
+    return this._evalCondition({
+      condition: badge.condition || 'always',
+      entity: badge.entity,
+      state: badge.state,
+      threshold: badge.threshold,
+      after: badge.after,
+      before: badge.before,
+    }, defaultEntity);
+  }
+
+  private _getBadgeLabel(badge: GlanceBadge | undefined, defaultEntity: string): string | null {
+    if (!badge?.label) return null;
+    const entityId = badge.entity || defaultEntity;
+    const entityState = this.hass?.states?.[entityId];
+    if (!entityState) return null;
+
+    const raw = badge.label === 'attribute' && badge.label_attribute
+      ? String(entityState.attributes[badge.label_attribute] ?? '')
+      : entityState.state;
+
+    const max = badge.label_max_length ?? 3;
+    return raw.length > max ? raw.slice(0, max) : raw;
+  }
+
+  private _handleClick(e: Event, item: GlanceItem) {
+    e.stopPropagation();
+    const action = item.tap_action;
+    if (!action || action.action === 'more-info') {
+      moreInfo(action?.entity || item.entity);
+      return;
+    }
+    switch (action.action) {
+      case 'navigate':
+        if (action.navigation_path) navigate(window, action.navigation_path);
+        break;
+      case 'toggle':
+        toggleEntity(this.hass, action.entity || item.entity);
+        forwardHaptic('success');
+        break;
+      case 'url':
+        if (action.url_path) window.open(action.url_path);
+        break;
+    }
+  }
+
+  protected render() {
+    if (!this.hass || !this.items?.length) return html``;
+
+    const visible = this.items.filter(item =>
+      this.hass.states[item.entity] !== undefined &&
+      this._evalCondition(item.show, item.entity)
+    );
+
+    if (!visible.length) return html``;
+
+    return html`
+      <div class="glance-bar">
+        ${visible.map(item => {
+          const entityState = this.hass.states[item.entity];
+          const label = item.name || entityState?.attributes?.friendly_name || item.entity;
+          const showBadge = this._evalBadge(item.badge, item.entity);
+          const badgeColor = item.badge?.color ?? '#ef4444';
+          const badgeIcon = item.badge?.icon;
+          const badgeLabel = showBadge ? this._getBadgeLabel(item.badge, item.entity) : null;
+
+          return html`
+            <div
+              class="glance-item${showBadge ? ' has-badge' : ''}"
+              title="${label}: ${entityState?.state ?? ''}"
+              @click="${(e) => this._handleClick(e, item)}"
+            >
+              <ha-icon
+                icon="${item.icon}"
+                style="${item.color ? `color: ${item.color}` : ''}"
+              ></ha-icon>
+              ${showBadge ? html`
+                <span class="glance-badge" style="--badge-color: ${badgeColor}">
+                  ${badgeIcon ? html`<ha-icon icon="${badgeIcon}" class="badge-icon"></ha-icon>` : html``}
+                  ${badgeLabel ? html`<span class="badge-label">${badgeLabel}</span>` : html``}
+                </span>
+              ` : html``}
+            </div>
+          `;
+        })}
+      </div>
+    `;
+  }
+
+  static get styles() {
+    return css`
+      :host {
+        display: block;
+        position: sticky;
+        bottom: 0;
+        z-index: 100;
+        /* pushes bar to bottom of the flex column when content is shorter than the sidebar */
+        margin-top: auto;
+      }
+
+      :host::before {
+        content: '';
+        position: absolute;
+        top: -32px;
+        left: 0;
+        right: 0;
+        height: 32px;
+        /* fades into whatever background the bar uses; invisible when bar is transparent */
+        background: linear-gradient(to bottom, transparent, var(--glance-bar-background, transparent));
+        pointer-events: none;
+      }
+
+      .glance-bar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px 0 16px;
+        background: var(--glance-bar-background, transparent);
+        border-top: var(--glance-bar-border-top, none);
+      }
+
+      .glance-item {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--sidebar-card-background, rgba(255, 255, 255, 0.06));
+        border: 1px solid var(--sidebar-border-color, rgba(255, 255, 255, 0.1));
+        border-radius: 12px;
+        cursor: pointer;
+        transition: transform 0.2s ease, background 0.2s ease;
+      }
+
+      .glance-item:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: scale(1.08);
+      }
+
+      .glance-item ha-icon {
+        color: var(--sidebar-icon-color, rgba(255, 255, 255, 0.85));
+        --mdc-icon-size: 22px;
+        display: flex;
+      }
+
+      .glance-item.has-badge ha-icon {
+        color: var(--sidebar-selected-icon-color, #60a5fa);
+      }
+
+      .glance-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 14px;
+        height: 14px;
+        border-radius: 7px;
+        background: var(--badge-color, #ef4444);
+        border: 2px solid var(--sidebar-background, var(--primary-background-color, #111));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 2px;
+        box-sizing: border-box;
+        gap: 1px;
+      }
+
+      .badge-icon {
+        --mdc-icon-size: 8px;
+        color: #fff;
+        flex-shrink: 0;
+      }
+
+      .badge-label {
+        font-size: 9px;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1;
+        white-space: nowrap;
+        letter-spacing: -0.02em;
+      }
+    `;
+  }
+}
+
+customElements.define('glance-bar-element', GlanceBarElement);
+
+
 const weatherIconUrls = {
   'clear-night': '/local/weather-icons/meteocons/clear-night.svg',
   'cloudy': '/local/weather-icons/meteocons/cloudy.svg',
@@ -454,6 +760,8 @@ class SidebarCard extends LitElement {
   widgetCard: any = null;
   CUSTOM_TYPE_PREFIX = 'custom:';
   notifications = false; // Add this line
+  glanceBar: GlanceItem[] | null = null;
+  private _resizeObserver: any = null;
 
   /* **************************************** *
    *        Element's public properties       *
@@ -585,6 +893,7 @@ class SidebarCard extends LitElement {
     this.bottomCard = this.config.bottomCard ? this.config.bottomCard : null;
     this.updateMenu = this.config.hasOwnProperty('updateMenu') ? this.config.updateMenu : true;
     this.notifications = this.config.notifications ? this.config.notifications : false;
+    this.glanceBar = this.config.glanceBar ? this.config.glanceBar : null;
 
     return html`
       ${addStyle
@@ -679,6 +988,9 @@ class SidebarCard extends LitElement {
           ? html`
               <div class="bottom"></div>
             `
+          : html``}
+        ${this.glanceBar && this.glanceBar.length > 0
+          ? html`<glance-bar-element .hass=${this.hass} .items=${this.glanceBar}></glance-bar-element>`
           : html``}
       </div>
     `;
@@ -827,6 +1139,14 @@ class SidebarCard extends LitElement {
     }
   }
 
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+      this._resizeObserver = null;
+    }
+  }
+
   firstUpdated() {
     provideHass(this);
     let root = getRoot();
@@ -864,6 +1184,17 @@ class SidebarCard extends LitElement {
       self.updateSidebarSize(root);
       self._updateActiveMenu();
     }, 1);
+    // The panel is position:fixed with a JS-measured px width, so a single
+    // measurement at load can race the injected `#customSidebar { width: % }`
+    // stylesheet and pin the panel too wide — its content then spills into the
+    // separator until a hard refresh re-rolls the timing. Re-apply the width
+    // whenever the column is (re)laid out so it always tracks the real column.
+    if ('ResizeObserver' in window) {
+      this._resizeObserver = new (window as any).ResizeObserver(() => {
+        self.updateSidebarSize(root);
+      });
+      this._resizeObserver.observe(this);
+    }
     window.addEventListener(
       'resize',
       function() {

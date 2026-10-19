@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sidebar Card Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
     <style>
         body {
             margin: 0;
@@ -160,7 +161,18 @@
             <button onclick="testWithClock()">With Clock</button>
             <button onclick="testWithWeather()">With Weather</button>
             <button onclick="testFullConfig()">Full Config</button>
+            <button onclick="testGlanceBar()">Glance Bar</button>
             <button onclick="clearConfig()">Clear</button>
+        </div>
+
+        <div class="control-section">
+            <h4>🔦 Glance Bar State Toggles</h4>
+            <button onclick="toggleState('light.living_room', 'on', 'off')">Toggle Living Room Light</button>
+            <button onclick="toggleState('binary_sensor.front_door', 'on', 'off')">Toggle Front Door</button>
+            <button onclick="toggleState('sun.sun', 'below_horizon', 'above_horizon')">Toggle Sun (day/night)</button>
+            <button onclick="setAQI(30)">AQI: 30 (good)</button>
+            <button onclick="setAQI(75)">AQI: 75 (warn)</button>
+            <button onclick="setAQI(160)">AQI: 160 (bad)</button>
         </div>
     </div>
     
@@ -168,6 +180,38 @@
         <strong>Debug Log:</strong><br>
         Waiting for sidebar-card.js to load...
     </div>
+
+    <!-- ha-icon mock: shadow root per instance so MDI CSS works inside other shadow roots -->
+    <script>
+        customElements.define('ha-icon', class extends HTMLElement {
+            constructor() {
+                super();
+                const root = this.attachShadow({ mode: 'open' });
+                // Inject MDI font CSS into this shadow root — browser caches the file globally
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css';
+                root.appendChild(link);
+                this._span = document.createElement('span');
+                root.appendChild(this._span);
+            }
+            static get observedAttributes() { return ['icon']; }
+            connectedCallback() { this._render(); }
+            attributeChangedCallback() { this._render(); }
+            set icon(val) { this.setAttribute('icon', val); }
+            get icon() { return this.getAttribute('icon') || ''; }
+            _render() {
+                if (!this._span) return;
+                const name = (this.getAttribute('icon') || '').replace(/^mdi:/, '');
+                // --mdc-icon-size inherits through shadow boundaries via CSS custom properties
+                const size = getComputedStyle(this).getPropertyValue('--mdc-icon-size').trim() || '24px';
+                this.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;';
+                this._span.className = `mdi mdi-${name}`;
+                this._span.style.fontSize = size;
+                this._span.style.lineHeight = '1';
+            }
+        });
+    </script>
 
     <!-- Import your existing sidebar card -->
     <script type="module" src="../dist/sidebar-card.js"></script>
@@ -220,7 +264,18 @@
     
     <script>
         const debugEl = document.getElementById('debugInfo');
-        
+
+        // Overrides position:fixed and width:0 defaults that require the full HA DOM
+        const testStyle = `
+          .sidebar-inner {
+            position: relative !important;
+            width: 100% !important;
+            height: 100% !important;
+            top: 0 !important;
+            overflow: auto !important;
+          }
+        `;
+
         function log(message) {
             console.log(message);
             const timestamp = new Date().toLocaleTimeString();
@@ -260,6 +315,22 @@
                     attributes: {
                         friendly_name: 'Bedroom Light'
                     }
+                },
+                'sun.sun': {
+                    state: 'below_horizon',
+                    attributes: { friendly_name: 'Sun', next_rising: '', next_setting: '' }
+                },
+                'binary_sensor.front_door': {
+                    state: 'on',
+                    attributes: { friendly_name: 'Front Door', device_class: 'door' }
+                },
+                'binary_sensor.garage_door': {
+                    state: 'off',
+                    attributes: { friendly_name: 'Garage Door', device_class: 'garage_door' }
+                },
+                'sensor.air_quality_index': {
+                    state: '75',
+                    attributes: { friendly_name: 'Air Quality Index', unit_of_measurement: 'AQI' }
                 }
             },
             language: 'en',
@@ -306,7 +377,8 @@
             date: true,
             weather: true,
             weatherEntity: "weather.home",
-            width: 25 // Default width percentage
+            width: 25,
+            style: testStyle
         };
         
         // Width control functions
@@ -357,7 +429,8 @@
             log('Testing basic config...');
             currentConfig = {
                 title: "My Home",
-                width: currentConfig.width
+                width: currentConfig.width,
+                style: testStyle
             };
             const sidebarCard = document.getElementById('sidebarCard');
             sidebarCard.setConfig(currentConfig);
@@ -371,7 +444,8 @@
                 digitalClockWithSeconds: true,
                 date: true,
                 dateFormat: "dddd, MMMM DD",
-                width: currentConfig.width
+                width: currentConfig.width,
+                style: testStyle
             };
             const sidebarCard = document.getElementById('sidebarCard');
             sidebarCard.setConfig(currentConfig);
@@ -385,7 +459,8 @@
                 weather: true,
                 weatherEntity: "weather.home",
                 weatherFormat: "°C",
-                width: currentConfig.width
+                width: currentConfig.width,
+                style: testStyle
             };
             const sidebarCard = document.getElementById('sidebarCard');
             sidebarCard.setConfig(currentConfig);
@@ -402,6 +477,7 @@
                 weather: true,
                 weatherEntity: "weather.home",
                 width: currentConfig.width,
+                style: testStyle,
                 sidebarMenu: [
                     {
                         name: "Home",
@@ -443,9 +519,69 @@
         
         function clearConfig() {
             log('Clearing config...');
-            currentConfig = { width: currentConfig.width };
+            currentConfig = { width: currentConfig.width, style: testStyle };
             const sidebarCard = document.getElementById('sidebarCard');
             sidebarCard.setConfig(currentConfig);
+        }
+
+        function testGlanceBar() {
+            log('Testing glance bar...');
+            currentConfig = {
+                title: "Smart Home",
+                digitalClock: true,
+                date: true,
+                weather: true,
+                weatherEntity: "weather.home",
+                width: currentConfig.width,
+                style: testStyle,
+                sidebarMenu: [
+                    { name: "Home", icon: "mdi:home", action: "navigate", navigation_path: "/lovelace/0" },
+                    { name: "Lights", icon: "mdi:lightbulb", action: "navigate", navigation_path: "/lovelace/lights" },
+                    { name: "Security", icon: "mdi:shield-home", action: "navigate", navigation_path: "/lovelace/security" }
+                ],
+                glanceBar: [
+                    {
+                        entity: 'light.living_room',
+                        icon: 'mdi:lightbulb',
+                        name: 'Living Room',
+                        show: { condition: 'state', state: 'on' },
+                        badge: { condition: 'sun_below_horizon', color: '#f59e0b', icon: 'mdi:alert-circle-outline' }
+                    },
+                    {
+                        entity: 'binary_sensor.front_door',
+                        icon: 'mdi:door-open',
+                        name: 'Front Door',
+                        show: { condition: 'state', state: 'on' },
+                        badge: { condition: 'always', color: '#ef4444' }
+                    },
+                    {
+                        entity: 'sensor.air_quality_index',
+                        icon: 'mdi:air-filter',
+                        name: 'Air Quality',
+                        show: { condition: 'numeric_above', threshold: 50 },
+                        badge: { condition: 'numeric_above', threshold: 100, color: '#ef4444', icon: 'mdi:skull-outline' }
+                    }
+                ]
+            };
+            const sidebarCard = document.getElementById('sidebarCard');
+            sidebarCard.setConfig(currentConfig);
+            sidebarCard.hass = mockHassData;
+            log(`States: light=${mockHassData.states['light.living_room'].state}, door=${mockHassData.states['binary_sensor.front_door'].state}, sun=${mockHassData.states['sun.sun'].state}, aqi=${mockHassData.states['sensor.air_quality_index'].state}`);
+        }
+
+        function toggleState(entityId, stateA, stateB) {
+            const current = mockHassData.states[entityId].state;
+            mockHassData.states[entityId].state = current === stateA ? stateB : stateA;
+            const sidebarCard = document.getElementById('sidebarCard');
+            if (sidebarCard) sidebarCard.hass = Object.assign({}, mockHassData);
+            log(`${entityId} → ${mockHassData.states[entityId].state}`);
+        }
+
+        function setAQI(value) {
+            mockHassData.states['sensor.air_quality_index'].state = String(value);
+            const sidebarCard = document.getElementById('sidebarCard');
+            if (sidebarCard) sidebarCard.hass = Object.assign({}, mockHassData);
+            log(`AQI → ${value}`);
         }
         
         // Wait for custom element to be defined
